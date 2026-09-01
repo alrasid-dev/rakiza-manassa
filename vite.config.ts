@@ -153,6 +153,7 @@ function vitePluginManusDebugCollector(): Plugin {
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES === "1" ? "/rakiza-manassa/" : "/",
   plugins,
   resolve: {
     alias: {

@@ -33,6 +33,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - name: تثبيت وبناء الواجهة
+        env:
+          GITHUB_PAGES: "1"
         run: |
           pnpm install --frozen-lockfile
           pnpm exec vite build

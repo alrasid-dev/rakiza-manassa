@@ -1,8 +1,8 @@
 {
   "$schema": "https://vercel.sh",
   "framework": null,
-  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run vercel-build",
+  "installCommand": "npx --yes pnpm@10.4.1 install --frozen-lockfile",
+  "buildCommand": "npx --yes pnpm@10.4.1 run vercel-build",
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
