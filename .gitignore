@@ -5,6 +5,10 @@
 # Build outputs
 dist/
 build/
+/public
+
+# Vercel
+.vercel
 *.dist
 
 # Environment variables

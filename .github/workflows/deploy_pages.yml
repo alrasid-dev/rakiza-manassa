@@ -1,0 +1,49 @@
+name: نشر المنصة مجاناً (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+      - name: تهيئة pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: تهيئة Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: تثبيت وبناء الواجهة
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec vite build
+          mkdir -p _site
+          cp -R dist/public/. _site/
+      - name: تهيئة GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: تحميل ملفات الموقع
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: النشر النهائي
+        id: deployment
+        uses: actions/deploy-pages@v4

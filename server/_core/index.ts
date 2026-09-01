@@ -34,11 +34,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
-async function startServer() {
+export function createExpressApp() {
   const app = express();
-  const server = createServer(app);
   app.use(securityHeaders);
-  // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
@@ -51,7 +49,6 @@ async function startServer() {
   app.post("/api/scheduled/support-ticket-escalation", handleSupportTicketEscalationSchedule);
   app.post("/api/scheduled/attendance-confirmation", handleAttendanceConfirmationSchedule);
   app.post("/api/scheduled/internal-mail-dispatch", handleInternalMailSchedule);
-  // tRPC API
   app.use(
     "/api/trpc",
     trpcMutationOriginGuard,
@@ -63,7 +60,18 @@ async function startServer() {
   app.get("/health", (_req, res) => {
     res.json({ ok: true, name: "rakiza", brand: "رَكيزة" });
   });
-  // development mode uses Vite, production mode uses static files
+  return app;
+}
+
+export const app = createExpressApp();
+export default app;
+
+if (process.env.VERCEL) {
+  serveStatic(app);
+}
+
+async function startServer() {
+  const server = createServer(app);
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -82,4 +90,6 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+if (!process.env.VERCEL) {
+  startServer().catch(console.error);
+}

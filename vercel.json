@@ -1,0 +1,13 @@
+{
+  "$schema": "https://vercel.sh",
+  "framework": null,
+  "installCommand": "corepack enable && pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run vercel-build",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/health", "destination": "/health" },
+    { "source": "/((?!api/|health).*)", "destination": "/index.html" }
+  ]
+}

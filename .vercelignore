@@ -1,0 +1,6 @@
+.manus-logs
+.git
+coverage
+tmp
+temp
+*.log
