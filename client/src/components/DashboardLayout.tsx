@@ -4,26 +4,38 @@ import { trpc } from "@/lib/trpc";
 import {
   ArrowLeft,
   Archive,
+  AlertTriangle,
   PackageCheck,
   Award,
+  BadgeCheck,
   BadgeHelp,
   BellRing,
   Building2,
   CalendarDays,
+  CalendarOff,
   ClipboardCheck,
   Clock3,
   CircleCheck,
   FileBarChart2,
+  FileSearch,
+  FileSpreadsheet,
   FileUp,
   FileText,
+  Gauge,
+  Handshake,
   Headphones,
+  KeyRound,
+  Landmark,
   Mail,
   Network,
   ScrollText,
   UserCheck,
+  UserCog,
+  UserPlus,
   LayoutDashboard,
   ListChecks,
   Menu,
+  Repeat,
   Scale,
   ShieldCheck,
   Settings2,
@@ -51,6 +63,10 @@ import { RAKIZA_BRAND, RAKIZA_HEADER, RAKIZA_BRAND_LINE } from "@/branding";
 import { Button } from "./ui/button";
 import AiRakizaTaskPrompt from "./AiRakizaTaskPrompt";
 import AttendanceFirstGate from "./AttendanceFirstGate";
+import FirstUseHelp from "./FirstUseHelp";
+import GlobalSearchBar from "./GlobalSearchBar";
+import PasskeyEnrollmentGate from "./PasskeyEnrollmentGate";
+import WorkModeToggle, { useWorkMode } from "./WorkModeToggle";
 
 type WorkspacePermission = "full_control" | "general_view" | "employee" | "trainee" | null | undefined;
 export type AnnouncementPreview = { id: number; title: string; body: string };
@@ -70,12 +86,12 @@ export function isNavigationSectionAllowed(sectionHeading: string, permission: W
   return !isStaff || sectionHeading === "لوحة القيادة" || sectionHeading === "العمل والتقارير" || sectionHeading === "الموارد البشرية" || (sectionHeading === "شؤون الملازمين" && /ملازم|trainee/.test(unitText));
 }
 export const navigationSections: { heading: string; collapsible?: boolean; items: { icon: typeof LayoutDashboard; label: string; path: string; audiences: NavigationAudience[]; ownerOnly?: boolean; leadershipOnly?: boolean; operationsOnly?: boolean }[] }[] = [
-  { heading: "لوحة القيادة", items: [{ icon: ListChecks, label: "مهامي", path: "/tasks", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: BellRing, label: "الإشعارات", path: "/notifications", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: MessageSquare, label: "الدردشات", path: "/messages", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Mail, label: "بريد ركيزة", path: "/rakiza-mail?focus=search", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Bot, label: "AI ركيزة", path: "/assistants", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Megaphone, label: "الإعلانات الداخلية", path: "/announcements", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: ClipboardCheck, label: "المتعثرات", path: "/delays", audiences: ["full_control", "general_view", "employee"] }, { icon: Settings2, label: "إعدادات المنصة", path: "/platform-settings", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
-  { heading: "العمل والتقارير", collapsible: true, items: [{ icon: LayoutDashboard, label: "الرئيسية", path: "/", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileUp, label: "رفع التقارير", path: "/report-upload", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: ClipboardCheck, label: "مراجعة تقييم التقارير", path: "/report-evaluations", audiences: ["full_control", "general_view"] }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Award, label: "سجل الإنجازات", path: "/achievements", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: BadgeHelp, label: "دليل المستخدم", path: "/guide", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
-  { heading: "رئاسة المحكمة", collapsible: true, items: [{ icon: LayoutDashboard, label: "مكتب رئيس المحكمة", path: "/", audiences: ["full_control", "general_view"] }, { icon: Activity, label: "مرصد ضغط العمل", path: "/leadership-workload", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Network, label: "مساعد رئيس المحكمة", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Building2, label: "أمانة المحكمة", path: "/hierarchy", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "شؤون القضاة", path: "/judges", audiences: ["full_control", "general_view"] }, { icon: Headphones, label: "الدعم التقني", path: "/support", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
-  { heading: "شؤون الملازمين", collapsible: true, items: [{ icon: ShieldCheck, label: "تشغيل شؤون الملازمين", path: "/trainees", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileUp, label: "بيانات Excel للملازمين", path: "/imports", audiences: ["full_control", "general_view"] }, { icon: FileText, label: "قوالب عروض شؤون الملازمين", path: "/trainee-correspondence-templates", audiences: ["full_control", "general_view", "employee"] }] },
-  { heading: "الموارد البشرية", collapsible: true, items: [{ icon: UsersRound, label: "الموارد البشرية والموظفون", path: "/people", audiences: ["full_control", "general_view"] }, { icon: Clock3, label: "الحضور والانصراف", path: "/status?tab=attendance", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: CircleCheck, label: "تأكيد الحضور", path: "/status?tab=confirmation", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: ClipboardCheck, label: "الاستئذان والإجازات", path: "/status", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: PackageCheck, label: "العهد والأصول", path: "/assets", audiences: ["full_control", "general_view", "employee"] }] },
-  { heading: "الإدارة والتقارير", collapsible: true, items: [{ icon: ClipboardCheck, label: "طلبات الاعتماد", path: "/approvals", audiences: ["full_control", "general_view"], operationsOnly: true }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Download, label: "تنزيل بيانات القسم", path: "/data-exports", audiences: ["full_control", "general_view"] }, { icon: ScrollText, label: "سجل الحركة", path: "/activity-log", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "القرارات والمساءلات", path: "/decisions", audiences: ["full_control", "general_view"] }, { icon: CalendarDays, label: "الاجتماعات والمحاضر", path: "/meetings", audiences: ["full_control", "general_view"] }, { icon: UserCheck, label: "طلبات التسجيل وإدارة المستخدمين", path: "/access-management", audiences: ["full_control"], ownerOnly: true }, { icon: Settings2, label: "وحدات رَكيزة وأيقوناتها", path: "/platform-modules", audiences: ["full_control"], ownerOnly: true }, { icon: UserCheck, label: "تفويض القيادة", path: "/leadership-access", audiences: ["full_control"], ownerOnly: true }, { icon: Network, label: "التسلسل الإداري", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Archive, label: "الأرشيف", path: "/archive", audiences: ["full_control", "general_view"] }, { icon: Files, label: "قوالب مراسلات القسم", path: "/department-templates", audiences: ["full_control", "general_view"] }] },
+  { heading: "لوحة القيادة", items: [{ icon: ListChecks, label: "مهامي", path: "/tasks", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: BellRing, label: "الإشعارات", path: "/notifications", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: MessageSquare, label: "الدردشات", path: "/messages", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Mail, label: "بريد ركيزة", path: "/rakiza-mail?focus=search", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Bot, label: "AI ركيزة", path: "/assistants", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Megaphone, label: "الإعلانات الداخلية", path: "/announcements", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: AlertTriangle, label: "المتعثرات", path: "/delays", audiences: ["full_control", "general_view", "employee"] }, { icon: UserCog, label: "إعدادات الموظف", path: "/personal-settings", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: Settings2, label: "إعدادات المنصة", path: "/platform-settings", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
+  { heading: "العمل والتقارير", collapsible: true, items: [{ icon: LayoutDashboard, label: "الرئيسية", path: "/", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileUp, label: "رفع التقارير", path: "/report-upload", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileSearch, label: "مراجعة تقييم التقارير", path: "/report-evaluations", audiences: ["full_control", "general_view"] }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Award, label: "سجل الإنجازات", path: "/achievements", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: BadgeHelp, label: "دليل المستخدم", path: "/guide", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
+  { heading: "رئاسة المحكمة", collapsible: true, items: [{ icon: Landmark, label: "مكتب رئيس المحكمة", path: "/", audiences: ["full_control", "general_view"] }, { icon: Activity, label: "مرصد ضغط العمل", path: "/leadership-workload", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Repeat, label: "المداورة", path: "/rotation", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Gauge, label: "مؤشرات القيادة", path: "/owner-kpi", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Handshake, label: "تفويض", path: "/delegation", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Network, label: "مساعد رئيس المحكمة", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Building2, label: "أمانة المحكمة", path: "/hierarchy", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "شؤون القضاة", path: "/judges", audiences: ["full_control", "general_view"] }, { icon: Headphones, label: "الدعم التقني", path: "/support", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
+  { heading: "شؤون الملازمين", collapsible: true, items: [{ icon: ShieldCheck, label: "تشغيل شؤون الملازمين", path: "/trainees", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileSpreadsheet, label: "بيانات Excel للملازمين", path: "/imports", audiences: ["full_control", "general_view"] }, { icon: FileText, label: "قوالب عروض شؤون الملازمين", path: "/trainee-correspondence-templates", audiences: ["full_control", "general_view", "employee"] }] },
+  { heading: "الموارد البشرية", collapsible: true, items: [{ icon: UsersRound, label: "الموارد البشرية والموظفون", path: "/people", audiences: ["full_control", "general_view"] }, { icon: Clock3, label: "الحضور والانصراف", path: "/status?tab=attendance", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: CircleCheck, label: "تأكيد الحضور", path: "/status?tab=confirmation", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: CalendarOff, label: "الاستئذان والإجازات", path: "/status", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: PackageCheck, label: "العهد والأصول", path: "/assets", audiences: ["full_control", "general_view", "employee"] }] },
+  { heading: "الإدارة والتقارير", collapsible: true, items: [{ icon: BadgeCheck, label: "طلبات الاعتماد", path: "/approvals", audiences: ["full_control", "general_view"], operationsOnly: true }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Download, label: "تنزيل بيانات القسم", path: "/data-exports", audiences: ["full_control", "general_view"] }, { icon: ScrollText, label: "سجل الحركة", path: "/activity-log", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "القرارات والمساءلات", path: "/decisions", audiences: ["full_control", "general_view"] }, { icon: CalendarDays, label: "الاجتماعات والمحاضر", path: "/meetings", audiences: ["full_control", "general_view"] }, { icon: UserPlus, label: "طلبات التسجيل وإدارة المستخدمين", path: "/access-management", audiences: ["full_control"], ownerOnly: true }, { icon: Settings2, label: "وحدات رَكيزة وأيقوناتها", path: "/platform-modules", audiences: ["full_control"], ownerOnly: true }, { icon: KeyRound, label: "تفويض القيادة", path: "/leadership-access", audiences: ["full_control"], ownerOnly: true }, { icon: Network, label: "التسلسل الإداري", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Archive, label: "الأرشيف", path: "/archive", audiences: ["full_control", "general_view"] }, { icon: Files, label: "قوالب مراسلات القسم", path: "/department-templates", audiences: ["full_control", "general_view"] }] },
 ];
 
 export const oliveIconMotionClass = "rakiza-olive-icon";
@@ -131,7 +147,7 @@ function CourtMark() {
   );
 }
 
-function NavigationMenu({ onNavigate, permission, isOwner, unitName, unitCode, variant = "light", navigationPreferences, mailUnreadCount = 0, chatUnreadCount = 0, taskAttentionCount = 0, pendingApprovalCount = 0, leadershipRoles = [] }: { onNavigate?: () => void; permission: WorkspacePermission; isOwner: boolean; unitName?: string | null; unitCode?: string | null; variant?: "light" | "dark"; navigationPreferences?: { navigationOrder: string[]; hiddenNavigationLabels: string[] }; mailUnreadCount?: number; chatUnreadCount?: number; taskAttentionCount?: number; pendingApprovalCount?: number; leadershipRoles?: string[] }) {
+function NavigationMenu({ onNavigate, permission, isOwner, unitName, unitCode, variant = "light", navigationPreferences, mailUnreadCount = 0, chatUnreadCount = 0, taskAttentionCount = 0, pendingApprovalCount = 0, leadershipRoles = [], workMode = "manager" }: { onNavigate?: () => void; permission: WorkspacePermission; isOwner: boolean; unitName?: string | null; unitCode?: string | null; variant?: "light" | "dark"; navigationPreferences?: { navigationOrder: string[]; hiddenNavigationLabels: string[] }; mailUnreadCount?: number; chatUnreadCount?: number; taskAttentionCount?: number; pendingApprovalCount?: number; leadershipRoles?: string[]; workMode?: "employee" | "manager" }) {
   const [location, setLocation] = useLocation();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ "لوحة القيادة": true, "العمل والتقارير": true, "الموارد البشرية": true, "تسلسل الأقسام": true });
 
@@ -139,7 +155,7 @@ function NavigationMenu({ onNavigate, permission, isOwner, unitName, unitCode, v
     <nav aria-label="التنقل الرئيسي" className="space-y-3">
       {navigationSections.map(section => {
         const sectionAllowed = isNavigationSectionAllowed(section.heading, permission, unitName, unitCode);
-        const permittedItems = sectionAllowed ? section.items.filter(item => (IS_PREVIEW_MODE || item.audiences.includes(permission || "general_view")) && (!item.ownerOnly || isOwner) && (!item.leadershipOnly || leadershipRoles.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary")) && (!item.operationsOnly || isOwner || leadershipRoles.some(role => ["court_president", "assistant_president", "court_secretary", "human_resources_manager", "department_manager", "performance_monitor", "trainee_affairs_manager"].includes(role)))) : [];
+        const permittedItems = sectionAllowed ? section.items.filter(item => (IS_PREVIEW_MODE || item.audiences.includes(permission || "general_view")) && (!item.ownerOnly || isOwner) && (!item.leadershipOnly || (workMode !== "employee" && leadershipRoles.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary"))) && (!item.operationsOnly || isOwner || leadershipRoles.some(role => ["court_president", "assistant_president", "court_secretary", "human_resources_manager", "department_manager", "performance_monitor", "trainee_affairs_manager"].includes(role)))) : [];
         const orderedNavigationItems = section.heading === "لوحة القيادة" && navigationPreferences ? navigationPreferences.navigationOrder.reduce<typeof permittedItems>((items, label) => {
           const item = permittedItems.find(candidate => candidate.label === label);
           if (item && !navigationPreferences.hiddenNavigationLabels.includes(item.label)) items.push(item);
@@ -161,8 +177,8 @@ function NavigationMenu({ onNavigate, permission, isOwner, unitName, unitCode, v
               const active = location === item.path;
               const { count: unreadCount, accessibleLabel: unreadLabel } = navigationBadgeForItem(item.label, { mail: mailUnreadCount, chat: chatUnreadCount, taskAttention: taskAttentionCount, pendingApprovals: pendingApprovalCount });
               return (
-                <button key={item.path} type="button" onClick={() => { setLocation(item.path); onNavigate?.(); }} className={["group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-right text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]", variant === "dark" ? (active ? "border-r-2 border-[#a8c98f] bg-[#1f6147] text-white shadow-[0_6px_16px_rgba(20,69,48,0.2)" : "text-white/85 hover:bg-[#214c3d] hover:text-white") : (active ? "border-r-2 border-[#7faa82] bg-[#e0ecdf] text-[#245f43] shadow-[0_5px_14px_rgba(50,94,68,0.09)]" : "text-[#4f6258] hover:bg-[#e9eee7] hover:text-[#245f43]")].join(" ")}>
-                  <span aria-hidden="true" className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg ${variant === "dark" ? (active ? "bg-[#255a43]" : "bg-[#183d2f] group-hover:bg-[#25513f]") : (active ? "bg-[#d1e4d1]" : "bg-[#eef3eb] group-hover:bg-[#deebdc]")}`}><item.icon className={`h-4 w-4 ${oliveIconMotionClass} ${variant === "dark" ? (active ? "text-[#dbead2]" : "text-[#9dc298] group-hover:text-[#dbead2]") : (active ? "text-[#245f43]" : "text-[#668c6f] group-hover:text-[#245f43]")}`} /></span>
+                <button key={`${item.path}-${item.label}`} type="button" onClick={() => { setLocation(item.path); onNavigate?.(); }} className={["group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-right text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]", variant === "dark" ? (active ? "border-r-2 border-[#a8c98f] bg-[#1f6147] text-white shadow-[0_6px_16px_rgba(20,69,48,0.2)" : "text-white/85 hover:bg-[#214c3d] hover:text-white") : (active ? "border-r-2 border-[#7faa82] bg-[#e0ecdf] text-[#245f43] shadow-[0_5px_14px_rgba(50,94,68,0.09)]" : "text-[#4f6258] hover:bg-[#e9eee7] hover:text-[#245f43]")].join(" ")}>
+                  <span aria-hidden="true" className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${variant === "dark" ? (active ? "bg-[#255a43]" : "bg-[#183d2f] group-hover:bg-[#25513f]") : (active ? "bg-[#d1e4d1]" : "bg-[#eef3eb] group-hover:bg-[#deebdc]")}`}><item.icon className={`h-[1.15rem] w-[1.15rem] ${oliveIconMotionClass} ${variant === "dark" ? (active ? "text-[#dbead2]" : "text-[#9dc298] group-hover:text-[#dbead2]") : (active ? "text-[#245f43]" : "text-[#668c6f] group-hover:text-[#245f43]")}`} /></span>
                   <span>{item.label}</span>
                   {unreadCount > 0 && <span aria-label={unreadLabel} className={`mr-auto min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${variant === "dark" ? "bg-[#b6d3aa] text-[#173c2d]" : "bg-[#b84d3e] text-white"}`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
                 </button>
@@ -226,7 +242,8 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
   }, [user?.id, location]);
   const markNotificationRead = trpc.court.notifications.markRead.useMutation({ onSuccess: () => utils.court.notifications.listMine.invalidate() });
   const hasLeadershipScope = roles.data?.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary") ?? false;
-  const navigationPermission = resolveNavigationPermission(permission.data, hasLeadershipScope);
+  const workMode = useWorkMode(hasLeadershipScope);
+  const navigationPermission = resolveNavigationPermission(permission.data, hasLeadershipScope && workMode !== "employee");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [attendanceGateBlocking, setAttendanceGateBlocking] = useState(true);
   const { theme, toggleTheme } = useTheme();
@@ -276,7 +293,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
 
   if (!user && !IS_PREVIEW_MODE) {
     return (
-      <div dir="rtl" className="rakiza-theme-root grid min-h-screen place-items-center bg-[#f7f5ef] p-5" style={{ fontFamily: "Tajawal, sans-serif" }}>
+      <div dir="rtl" className="rakiza-theme-root grid min-h-screen place-items-center bg-[var(--rakiza-canvas)] p-5" style={{ fontFamily: "Tajawal, sans-serif" }}>
         <section className="w-full max-w-md rounded-[2rem] border border-[#e8e1d2] bg-white p-8 text-center shadow-[0_24px_70px_rgba(34,54,46,0.12)]">
           <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-[#12352f] text-[#f1d794]">
             <ShieldCheck className="h-8 w-8" aria-hidden="true" />
@@ -289,16 +306,19 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
           <button type="button" onClick={() => setLocation("/register")} className="mt-3 w-full rounded-xl border border-[#d9e4d7] px-4 py-3 text-sm font-bold text-[#397057] hover:bg-[#f3f8f2]">
             طلب تسجيل جديد
           </button>
+          <button type="button" onClick={() => setLocation("/recover")} className="mt-2 w-full rounded-xl px-4 py-2 text-sm font-bold text-[#718078] hover:text-[#245f43]">
+            استعادة الدخول
+          </button>
         </section>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="rakiza-theme-root min-h-screen overflow-x-hidden bg-[#b6b7af] text-[#243d32]" style={{ fontFamily: "Tajawal, sans-serif" }}>
+    <div dir="rtl" className="rakiza-theme-root min-h-screen overflow-x-hidden bg-[var(--rakiza-canvas)] text-[var(--rakiza-ink)]" style={{ fontFamily: "Tajawal, sans-serif" }}>
       <div dir="ltr" className="mx-auto min-h-screen w-full max-w-[1800px] overflow-x-hidden lg:flex">
         <main dir="rtl" className="w-full min-w-0 px-4 pb-8 pt-4 sm:px-7 sm:pt-6 lg:flex-1 lg:px-8 lg:pt-5">
-          <header className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-[#cfd7ca] bg-[#f8f8f3] px-4 py-3 shadow-[0_4px_16px_rgba(35,63,50,0.04)] sm:px-5 lg:mb-6 lg:min-h-[5.6rem] lg:flex-nowrap">
+          <header className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rakiza-border)] bg-[var(--rakiza-surface)] px-4 py-3 shadow-[0_4px_16px_rgba(35,63,50,0.04)] sm:px-5 lg:mb-6 lg:min-h-[5.6rem] lg:flex-nowrap">
             <div dir="rtl" className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
@@ -322,6 +342,8 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
               <ArrowLeft className="h-4 w-4 shrink-0 text-[#698075]" aria-hidden="true" />
             </button>
             <div dir="ltr" className="relative flex min-w-0 items-center gap-2 sm:gap-3">
+              <GlobalSearchBar />
+              <WorkModeToggle hasLeadershipScope={hasLeadershipScope} />
               {toggleTheme && <button type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "التبديل إلى النمط الفاتح" : "التبديل إلى النمط الداكن"} title={theme === "dark" ? "النمط الفاتح" : "النمط الداكن"} aria-pressed={theme === "dark"} data-testid="theme-toggle" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] text-[#2d6b4f] transition-colors hover:bg-[#e0ecdf] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">{theme === "dark" ? <Sun className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" /> : <Moon className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />}</button>}
               <button type="button" aria-label="الإشعارات" onClick={() => setNotificationsOpen(!notificationsOpen)} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#486455] transition hover:bg-[#e1ebe0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
                 <BellRing className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />
@@ -349,12 +371,14 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
             </div>
           </header>
           {!hideUtilityPrompts && <PwaInstallHint />}
+          {!IS_PREVIEW_MODE && user && <PasskeyEnrollmentGate officialEmail={user.email} />}
           {!IS_PREVIEW_MODE && user && <AttendanceFirstGate onComplete={() => window.setTimeout(() => undefined, 0)} onBlockingChange={({ isBlocking }) => setAttendanceGateBlocking(isBlocking)} />}
           {!IS_PREVIEW_MODE && user && <AiRakizaTaskPrompt tasks={assignedTasks.data || []} unreadMailCount={internalMailCounts.data?.unread || 0} urgentUnreadMailCount={internalMailCounts.data?.urgentUnread || 0} unreadNotificationCount={unreadNotifications.length} suppressAutoPrompt={attendanceGateBlocking} onStart={task => setLocation(`/tasks?task=${task.id}`)} onOpenAssistant={() => setLocation("/assistants")} onOpenMail={() => setLocation("/rakiza-mail")} onOpenNotifications={() => setLocation("/notifications")} />}
+          <FirstUseHelp />
           {children}
         </main>
 
-        <aside dir="rtl" className="hidden w-[15.5rem] shrink-0 bg-[#12352f] px-4 py-6 text-white shadow-[-8px_0_22px_rgba(18,53,47,0.12)] lg:block">
+        <aside dir="rtl" className="rakiza-sidebar hidden w-[15.5rem] shrink-0 bg-sidebar px-4 py-6 text-sidebar-foreground shadow-[-8px_0_22px_rgba(18,53,47,0.12)] lg:block">
           <div className="sticky top-5 flex min-h-[calc(100vh-2.5rem)] flex-col">
             <div className="border-b border-white/10 pb-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#eff4ec] text-[#2d6b4f] shadow-[0_10px_30px_rgba(0,0,0,0.16)]"><UsersRound className={`h-8 w-8 ${oliveIconMotionClass}`} aria-hidden="true" /></div>
@@ -362,7 +386,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
               <p className="mt-1 text-sm text-white/70">{currentProfile.data?.unitName || "وحدة شؤون الملازمين"}</p>
             </div>
             {dashboardCustomization && <div className="mt-5">{dashboardCustomization}</div>}
-            <div className="mt-6"><NavigationMenu variant="dark" permission={navigationPermission} isOwner={navigationPermission === "full_control"} unitName={currentProfile.data?.unitName} unitCode={currentProfile.data?.unitCode} navigationPreferences={navigationPreferences} mailUnreadCount={Number(internalMailCounts.data?.unread || 0)} chatUnreadCount={Number(chatUnread.data || 0)} taskAttentionCount={taskAttentionCount} pendingApprovalCount={Number(pendingApprovals.data?.length || 0)} leadershipRoles={roles.data ?? []} /></div>
+            <div className="mt-6"><NavigationMenu variant="dark" permission={navigationPermission} isOwner={navigationPermission === "full_control"} unitName={currentProfile.data?.unitName} unitCode={currentProfile.data?.unitCode} navigationPreferences={navigationPreferences} mailUnreadCount={Number(internalMailCounts.data?.unread || 0)} chatUnreadCount={Number(chatUnread.data || 0)} taskAttentionCount={taskAttentionCount} pendingApprovalCount={Number(pendingApprovals.data?.length || 0)} leadershipRoles={roles.data ?? []} workMode={workMode} /></div>
             <div className="mt-auto border-t border-white/10 pt-4">
               <div className="flex items-center gap-2 text-xs font-bold text-white/80"><ShieldCheck className={`h-4 w-4 text-[#a8c98f] ${oliveIconMotionClass}`} /> جلسة محمية</div>
               <p className="mt-2 text-xs leading-5 text-white/55">{IS_PREVIEW_MODE ? "وضع معاينة مؤقت." : "سجل التدقيق مفعّل."}</p>
@@ -376,13 +400,13 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
       {mobileOpen && (
         <div className="fixed inset-0 z-50">
           <button type="button" aria-label="إغلاق القائمة" onClick={() => setMobileOpen(false)} className="absolute inset-0 bg-[#10271f]/35 backdrop-blur-sm" />
-          <aside className="absolute right-0 top-0 h-full w-[19rem] max-w-[86vw] overflow-y-auto bg-[#edf0e9] p-5 shadow-[-20px_0_55px_rgba(18,53,47,0.18)]">
+          <aside className="absolute right-0 top-0 h-full w-[19rem] max-w-[86vw] overflow-y-auto bg-[var(--rakiza-surface)] p-5 shadow-[-20px_0_55px_rgba(18,53,47,0.18)]">
             <div className="flex items-center justify-between">
               <CourtMark />
               <button type="button" aria-label="إغلاق القائمة" onClick={() => setMobileOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl text-[#486455] hover:bg-[#dce9da]"><X className="h-5 w-5" /></button>
             </div>
             {dashboardCustomization && <div className="mt-7">{dashboardCustomization}</div>}
-            <div className="mt-7"><NavigationMenu onNavigate={() => setMobileOpen(false)} permission={navigationPermission} isOwner={navigationPermission === "full_control"} unitName={currentProfile.data?.unitName} unitCode={currentProfile.data?.unitCode} navigationPreferences={navigationPreferences} mailUnreadCount={Number(internalMailCounts.data?.unread || 0)} chatUnreadCount={Number(chatUnread.data || 0)} taskAttentionCount={taskAttentionCount} pendingApprovalCount={Number(pendingApprovals.data?.length || 0)} leadershipRoles={roles.data ?? []} /></div>
+            <div className="mt-7"><NavigationMenu onNavigate={() => setMobileOpen(false)} permission={navigationPermission} isOwner={navigationPermission === "full_control"} unitName={currentProfile.data?.unitName} unitCode={currentProfile.data?.unitCode} navigationPreferences={navigationPreferences} mailUnreadCount={Number(internalMailCounts.data?.unread || 0)} chatUnreadCount={Number(chatUnread.data || 0)} taskAttentionCount={taskAttentionCount} pendingApprovalCount={Number(pendingApprovals.data?.length || 0)} leadershipRoles={roles.data ?? []} workMode={workMode} /></div>
             {!IS_PREVIEW_MODE && <button type="button" onClick={logout} className="mt-8 flex w-full items-center gap-2 rounded-xl bg-[#f4ede6] px-3 py-3 text-sm font-bold text-[#784b3f]"><Building2 className="h-4 w-4" /> تسجيل الخروج</button>}
           </aside>
         </div>

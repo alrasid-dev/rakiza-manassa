@@ -23,6 +23,6 @@ describe("مسار مرصد الضغط القيادي", () => {
 
   it("يرفض مدير القسم ولا يمنحه مؤشرات أو توصيات تخص بقية المحكمة", async () => {
     const caller = courtRouter.createCaller({ user: { id: 4, role: "user", email: "manager@court.example", name: "مدير قسم", openId: "manager" } } as never);
-    await expect(caller.leadershipWorkloadObservatory()).rejects.toThrow("رئيس المحكمة والأمين ومساعد الرئيس فقط");
+    await expect(caller.leadershipWorkloadObservatory()).rejects.toThrow("المالك ورئيس المحكمة والأمين ومساعد الرئيس فقط");
   });
 });

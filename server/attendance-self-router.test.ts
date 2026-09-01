@@ -34,7 +34,7 @@ describe("court.attendance.record", () => {
   });
 
   it("يرفض تسجيل الحضور الذاتي خارج نافذة حضور الوردية", async () => {
-    mocks.getAttendanceWindowForProfile.mockResolvedValueOnce({ kind: "none", shiftName: "الوردية الأساسية" });
+    mocks.getAttendanceWindowForProfile.mockResolvedValueOnce({ kind: "none", shiftName: "الوردية الأساسية", workingDay: false });
     await expect(caller().attendance.record({ profileId: 9, recordDate: new Date("2026-08-14T07:00:00Z"), status: "present" })).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });

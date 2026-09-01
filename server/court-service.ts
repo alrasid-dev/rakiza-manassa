@@ -65,6 +65,7 @@ import {
   performanceReportEvaluations,
   organizationUnits,
   personProfiles,
+  permissionDelegations,
   profileDelegations,
   platformModules,
   registrationRequests,
@@ -108,6 +109,7 @@ import { leastLoadedSupportProfile, supportTicketDeadlines } from "./support-tic
 import { governanceParticipantNames } from "./governance-archive-policy";
 import { extractRawText } from "mammoth";
 import { distributeAcrossAvailableStaff, extractPerformanceTasksFromExcel, extractPerformanceTasksFromWordText, type PerformanceReportTaskCandidate } from "./performance-report-task-extractor";
+import { assignmentBlockReason, assignPerformanceTasksByNameOrEvenly, deadlineNudgeKind, evaluatePerformanceReportIntegrity } from "./platform-completion";
 import { buildReportEvaluationProposal, type ReportAnalysisStatus } from "./performance-report-evaluation-policy";
 
 const SYSTEM_ACTOR_ID = 0;
@@ -404,6 +406,18 @@ export async function createOperationalReport(input: { title: string; originalNa
     const taskResult = await db.insert(tasks).values({ title: `تقرير إنجاز: ${input.title}`, completionNote: summary.slice(0, 1900), status: "under_review", priority: "normal", unitId: input.unitId ?? null, assigneeProfileId: input.profileId, assignedByUserId: input.actorUserId, scheduledFor: now, dueAt: now });
     taskId = Number(taskResult[0].insertId);
   }
+  if (input.createTasksForTargetUnit && input.unitId) {
+    const unitStaff = await db.select({ fullName: personProfiles.fullName }).from(personProfiles).where(and(eq(personProfiles.unitId, input.unitId), eq(personProfiles.personType, "administrative"), eq(personProfiles.status, "active")));
+    const integrity = evaluatePerformanceReportIntegrity({ text: extractedText || summary, staffNames: unitStaff.map(row => row.fullName), extractedCount: taskCandidates.length });
+    if (!integrity.accepted) {
+      await db.update(documentRecords).set({ reviewStatus: "rejected" }).where(eq(documentRecords.id, documentId));
+      await db.update(performanceReportEvaluations).set({ managerDecision: "rejected", managerNote: integrity.reasons.join(" "), reviewedAt: new Date() }).where(eq(performanceReportEvaluations.documentId, documentId));
+      const sender = (await db.select({ id: personProfiles.id }).from(personProfiles).where(eq(personProfiles.id, input.profileId)).limit(1))[0];
+      if (sender) await db.insert(notifications).values({ profileId: sender.id, category: "report_review", title: "رُفض تقرير مراقبة الأداء تلقائياً", body: integrity.reasons.join(" "), dedupeKey: `report-auto-reject-${documentId}` });
+      await logAudit({ actorUserId: input.actorUserId, action: "operational_report.auto_rejected", entityType: "document_record", entityId: documentId, metadata: { reasons: integrity.reasons } });
+      throw new Error(`رُفض التقرير تلقائياً وأُعيد لمرسله: ${integrity.reasons.join(" ")}`);
+    }
+  }
   const distribution = input.createTasksForTargetUnit && input.unitId && taskCandidates.length
     ? await createTasksFromPerformanceReport({ documentId, unitId: input.unitId, candidates: taskCandidates, actorUserId: input.actorUserId })
     : undefined;
@@ -466,8 +480,9 @@ async function createTasksFromPerformanceReport(input: { documentId: number; uni
   ]);
   const onLeaveIds = new Set(activeLeaves.map(leave => leave.profileId));
   const workload = new Map(openTasks.filter(row => row.profileId).map(row => [row.profileId!, Number(row.count)]));
-  const availableStaff = unitStaff.filter(profile => !onLeaveIds.has(profile.id)).map(profile => ({ id: profile.id, openWorkload: workload.get(profile.id) ?? 0 }));
-  const assignments = distributeAcrossAvailableStaff(input.candidates, availableStaff);
+  const availableStaff = unitStaff.filter(profile => !onLeaveIds.has(profile.id) && profile.status === "active").map(profile => ({ id: profile.id, fullName: profile.fullName, openWorkload: workload.get(profile.id) ?? 0 }));
+  const namedAssignments = assignPerformanceTasksByNameOrEvenly(input.candidates, availableStaff);
+  const assignments = namedAssignments.length ? namedAssignments.map(item => ({ candidate: { title: item.title, source: item.source }, assigneeId: item.assigneeId })) : distributeAcrossAvailableStaff(input.candidates, availableStaff);
   const assignedCandidateIndexes = new Set(assignments.map(item => `${item.candidate.source}:${item.candidate.title}`));
   let createdTasks = 0;
   for (const assignment of assignments) {
@@ -488,7 +503,10 @@ export async function getEffectiveRoles(userId: number, isPlatformAdmin: boolean
   const assignments = await db.select({ role: courtRoleAssignments.role })
     .from(courtRoleAssignments)
     .where(and(eq(courtRoleAssignments.userId, userId), eq(courtRoleAssignments.isActive, true), lte(courtRoleAssignments.startsAt, now), or(isNull(courtRoleAssignments.endsAt), gt(courtRoleAssignments.endsAt, now))));
-  return assignments
+  const delegated = await db.select({ role: permissionDelegations.role, startsAt: permissionDelegations.startsAt, endsAt: permissionDelegations.endsAt, status: permissionDelegations.status })
+    .from(permissionDelegations)
+    .where(and(eq(permissionDelegations.delegateUserId, userId), eq(permissionDelegations.status, "active"), lte(permissionDelegations.startsAt, now), gt(permissionDelegations.endsAt, now)));
+  return [...assignments, ...delegated]
     .filter(item => item.role)
     .map(item => item.role as CourtRole)
     .filter(Boolean)
@@ -531,10 +549,10 @@ export async function listAdministrativeSubstitutes(unitId: number | null, exclu
     .orderBy(personProfiles.fullName);
 }
 
-export async function assignCourtRole(input: { userId: number; role: CourtRole; unitId?: number; delegatedByUserId: number }) {
+export async function assignCourtRole(input: { userId: number; role: CourtRole; unitId?: number; delegatedByUserId: number; endsAt?: Date }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
-  const result = await db.insert(courtRoleAssignments).values({ userId: input.userId, role: input.role, unitId: input.unitId ?? null, delegatedByUserId: input.delegatedByUserId, isActive: true });
+  const result = await db.insert(courtRoleAssignments).values({ userId: input.userId, role: input.role, unitId: input.unitId ?? null, delegatedByUserId: input.delegatedByUserId, isActive: true, endsAt: input.endsAt ?? null });
   const id = Number(result[0].insertId);
   await logAudit({ actorUserId: input.delegatedByUserId, action: "court_role.assigned", entityType: "court_role_assignment", entityId: id, metadata: { userId: input.userId, role: input.role, unitId: input.unitId ?? null } });
   await notifyPlatformOwnerSecurityAlert({ actorUserId: input.delegatedByUserId, action: "court_role.assigned", entityType: "court_role_assignment", entityId: id, details: { userId: input.userId, role: input.role, unitId: input.unitId ?? null } });
@@ -1524,6 +1542,11 @@ async function createTaskConversation(input: { db: any; taskId: number; title: s
 export async function createTask(input: { title: string; unitId?: number; assigneeProfileId?: number; traineeCopyProfileId?: number; priority: "normal" | "high" | "critical"; scheduledFor: Date; dueAt: Date; assignedByUserId: number; recurrence?: "none" | "daily" | "weekly" | "monthly" | "custom"; recurrenceEndAt?: Date; watcherProfileId?: number; isConfidential?: boolean; confidentialityExpiresAt?: Date }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
+  if (input.assigneeProfileId) {
+    const assignee = (await db.select({ status: personProfiles.status }).from(personProfiles).where(eq(personProfiles.id, input.assigneeProfileId)).limit(1))[0];
+    const blocked = assignmentBlockReason(assignee?.status);
+    if (blocked) throw new Error(blocked);
+  }
   const { traineeCopyProfileId, ...taskInput } = input;
   const result = await db.insert(tasks).values(taskInput);
   const id = Number(result[0].insertId);
@@ -2095,7 +2118,7 @@ export async function getAttendanceWindowForProfile(profileId: number, now = new
   const [shift] = await shiftQuery;
   if (!shift) return { kind: "none" as const, shiftName: null };
 
-  return { kind: attendanceWindowKindForShift(shift, now), shiftName: shift.name };
+  return { kind: attendanceWindowKindForShift(shift, now), shiftName: shift.name, workingDay: shift.workingDays.split(",").map(Number).includes(new Date(now.getTime() + 3 * 60 * 60 * 1000).getUTCDay()) };
 }
 
 export async function updateWorkShift(input: { id: number; name: string; startMinutes: number; endMinutes: number; fingerprintOpenMinutes: number; lateStartMinutes: number; morningCompensationDeadlineMinutes: number; actualEndMinutes: number; eveningCompensationDeadlineMinutes: number; fingerprintCloseMinutes: number; workingDays: string; isDefault?: boolean; actorUserId: number }) {
@@ -2351,7 +2374,7 @@ export async function getAccessPermission(email: string | null | undefined): Pro
   return department[0] ? "general_view" : null;
 }
 
-export async function submitRegistrationRequest(input: { fullName: string; officialEmail: string; notificationEmail: string; privacyNoticeVersion: string; privacyAcknowledged: boolean }) {
+export async function submitRegistrationRequest(input: { fullName: string; officialEmail: string; notificationEmail: string; phone?: string; privacyNoticeVersion: string; privacyAcknowledged: boolean }) {
   assertRegistrationPrivacy(input);
   const email = input.officialEmail.trim().toLowerCase();
   const notificationEmail = input.notificationEmail.trim().toLowerCase();
@@ -2365,7 +2388,7 @@ export async function submitRegistrationRequest(input: { fullName: string; offic
     .where(eq(registrationRequests.officialEmail, email))
     .limit(1);
   if (existing[0]) return { created: false, status: existing[0].status };
-  const result = await db.insert(registrationRequests).values({ fullName: input.fullName, officialEmail: email, notificationEmail, privacyNoticeVersion: PRIVACY_NOTICE_VERSION, privacyAcknowledgedAt: new Date() });
+  const result = await db.insert(registrationRequests).values({ fullName: input.fullName, officialEmail: email, notificationEmail, phone: input.phone?.trim() || null, privacyNoticeVersion: PRIVACY_NOTICE_VERSION, privacyAcknowledgedAt: new Date() });
   const id = Number(result[0].insertId);
   await logAudit({ action: "registration.requested", entityType: "registration_request", entityId: id, metadata: { officialEmail: email, notificationEmail, privacyNoticeVersion: PRIVACY_NOTICE_VERSION, privacyAcknowledged: true } });
   return { created: true, status: "pending" as const, id };
@@ -2504,12 +2527,22 @@ export async function createRecurringTasksAndNotifications(now = new Date()) {
 
 export async function escalateOverdueTasks(now = new Date()) {
   const db = await getDb();
-  if (!db) return { escalated: 0, skipped: 0 };
+  if (!db) return { escalated: 0, skipped: 0, nudged24h: 0, nudged12h: 0 };
   const candidates = await db.select().from(tasks).where(inArray(tasks.status, ["new", "in_progress"]));
   let escalated = 0;
   let supervisoryReferrals = 0;
   let skipped = 0;
+  let nudged24h = 0;
+  let nudged12h = 0;
   for (const task of candidates) {
+    if (task.assigneeProfileId && task.dueAt) {
+      const nudge = deadlineNudgeKind(task.dueAt, now);
+      if (nudge !== "none") {
+        const title = nudge === "12h" ? "تذكير: تبقى 12 ساعة على الموعد" : "تذكير: تبقى 24 ساعة على الموعد";
+        await db.insert(notifications).values({ profileId: task.assigneeProfileId, category: "task_due", title, body: `المهمة «${task.title}» تقترب من موعد الاستحقاق.`, dedupeKey: `task-nudge-${nudge}-${task.assigneeProfileId}-${task.id}` }).onDuplicateKeyUpdate({ set: { title } });
+        if (nudge === "12h") nudged12h += 1; else nudged24h += 1;
+      }
+    }
     const stage = escalationStage(task.scheduledFor, task.dueAt, now);
     if (stage === "none") { skipped += 1; continue; }
     const existingDelay = await db.select({ id: delayRecords.id }).from(delayRecords).where(eq(delayRecords.taskId, task.id)).limit(1);
@@ -2539,8 +2572,8 @@ export async function escalateOverdueTasks(now = new Date()) {
     await db.insert(taskUpdates).values({ taskId: task.id, actorUserId: SYSTEM_ACTOR_ID, updateType: "overdue_marked", note: "تصعيد تلقائي بعد ست ساعات" });
     escalated += 1;
   }
-  await logAudit({ action: "automation.task_escalation", entityType: "task_automation", metadata: { escalated, supervisoryReferrals, skipped } });
-  return { escalated, supervisoryReferrals, skipped };
+  await logAudit({ action: "automation.task_escalation", entityType: "task_automation", metadata: { escalated, supervisoryReferrals, skipped, nudged24h, nudged12h } });
+  return { escalated, supervisoryReferrals, skipped, nudged24h, nudged12h };
 }
 
 async function getOperationalRanking(input: { startAt: Date; unitId?: number; personType?: "administrative" | "trainee" }) {

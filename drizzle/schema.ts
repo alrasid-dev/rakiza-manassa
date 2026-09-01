@@ -28,7 +28,8 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-}, table => [uniqueIndex("users_firebase_uid_unique").on(table.firebaseUid), index("users_active_department_account_idx").on(table.activeDepartmentAccountId)]);
+  phone: varchar("phone", { length: 40 }),
+}, table => [uniqueIndex("users_firebase_uid_unique").on(table.firebaseUid), index("users_active_department_account_idx").on(table.activeDepartmentAccountId), index("users_phone_idx").on(table.phone)]);
 
 export const authActivationTokens = mysqlTable("auth_activation_tokens", {
   id: int("id").autoincrement().primaryKey(),
@@ -827,6 +828,7 @@ export const registrationRequests = mysqlTable("registration_requests", {
   fullName: varchar("fullName", { length: 240 }).notNull(),
   officialEmail: varchar("officialEmail", { length: 320 }).notNull(),
   notificationEmail: varchar("notificationEmail", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 40 }),
   status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   reviewedByUserId: int("reviewedByUserId"),
   reviewNote: text("reviewNote"),
@@ -1108,3 +1110,32 @@ export const dataExportJobs = mysqlTable("data_export_jobs", {
   completedAt: timestamp("completedAt"),
   expiresAt: timestamp("expiresAt"),
 }, table => [index("data_export_jobs_unit_status_idx").on(table.unitId, table.status), index("data_export_jobs_requested_idx").on(table.requestedByUserId, table.requestedAt)]);
+
+export const permissionDelegations = mysqlTable("permission_delegations", {
+  id: int("id").autoincrement().primaryKey(),
+  grantorUserId: int("grantorUserId").notNull(),
+  delegateUserId: int("delegateUserId").notNull(),
+  role: mysqlEnum("role", ["court_president", "assistant_president", "court_secretary", "human_resources_manager", "department_manager", "performance_monitor", "trainee_affairs_manager", "technical_support_manager", "technical_support_agent", "administrative_staff", "judicial_trainee", "judge"]).notNull(),
+  unitId: int("unitId"),
+  title: varchar("title", { length: 240 }).notNull(),
+  startsAt: timestamp("startsAt").notNull(),
+  endsAt: timestamp("endsAt").notNull(),
+  status: mysqlEnum("status", ["active", "ended", "cancelled"]).default("active").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [
+  index("permission_delegations_delegate_status_idx").on(table.delegateUserId, table.status),
+  index("permission_delegations_dates_idx").on(table.startsAt, table.endsAt),
+]);
+
+export const userWorkPreferences = mysqlTable("user_work_preferences", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  workMode: mysqlEnum("workMode", ["employee", "manager"]).default("manager").notNull(),
+  notificationsEnabled: boolean("notificationsEnabled").default(true).notNull(),
+  dndUntil: timestamp("dndUntil"),
+  seenHelpKeys: text("seenHelpKeys"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("user_work_preferences_user_unique").on(table.userId)]);

@@ -143,6 +143,7 @@
 .dark [class*="bg-[#f5edd8]"], .dark [class*="bg-[#f6f0df]"] { background-color: #403720 !important; }
 .dark [class*="bg-[#fbfaf6]"], .dark [class*="bg-[#fafbf8]"], .dark [class*="bg-[#fbfaf5]"], .dark [class*="bg-[#fffdf8]"], .dark [class*="bg-[#fffdf6]"] { background-color: #1d211b !important; }
 .dark [class*="bg-[#edf3eb]"], .dark [class*="bg-[#e9f0ea]"], .dark [class*="bg-[#f7fbf7]"], .dark [class*="bg-[#f7f8f3]"], .dark [class*="bg-[#f6faf6]"] { background-color: #1d2d24 !important; }
+.dark [class*="bg-[#eff4ec]"] { background-color: #284835 !important; color: #dbead2 !important; }
 .dark [class*="bg-[#eef1f5]"] { background-color: #24302b !important; }
 .dark [class*="bg-[#fffaf0]"], .dark [class*="bg-[#f7efe0]"], .dark [class*="bg-[#fff8e8]"], .dark [class*="bg-[#fff9e8]"], .dark [class*="bg-[#fff8db]"], .dark [class*="bg-[#fff3d6]"] { background-color: #403720 !important; }
 .dark [class*="bg-[#fbe9e4]"], .dark [class*="bg-[#fff0ed]"], .dark [class*="bg-[#fbece7]"] { background-color: #422825 !important; }
@@ -180,6 +181,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .rakiza-theme-root {
+    background-color: var(--rakiza-canvas);
+    color: var(--rakiza-ink);
+    transition: background-color 220ms ease, color 220ms ease;
+  }
+  .rakiza-sidebar {
+    background-color: var(--sidebar);
+    color: var(--sidebar-foreground);
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

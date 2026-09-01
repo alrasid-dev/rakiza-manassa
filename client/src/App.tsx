@@ -16,7 +16,12 @@ import { MeetingsPage } from "./pages/MeetingsPage";
 import { AchievementsPage } from "./pages/AchievementsPage";
 import { GovernanceArchivePage } from "./pages/GovernanceArchivePage";
 import { ReportUploadPage } from "./pages/ReportUploadPage";
-import { ActivityLogPage, DelaysPage, HierarchyAdminPage, ImportsPage, PersonnelAdminPage, ReportsDashboardPage, StatusAndLeavePage, TasksPage, TraineeManagementPage } from "./pages/FunctionalPages";
+import { ActivityLogPage, ApprovalsPage, DelaysPage, HierarchyAdminPage, ImportsPage, PersonnelAdminPage, ReportsDashboardPage, StatusAndLeavePage, TasksPage, TraineeManagementPage } from "./pages/FunctionalPages";
+import DelegationPage from "./pages/DelegationPage";
+import OwnerKpiPage from "./pages/OwnerKpiPage";
+import RotationPage from "./pages/RotationPage";
+import PersonalSettingsPage from "./pages/PersonalSettingsPage";
+import PasswordRecoveryPage from "./pages/PasswordRecoveryPage";
 import { AccessManagementPage, RegistrationPage } from "./pages/RegistrationPages";
 import { IS_PREVIEW_MODE } from "./const";
 import { TraineeCorrespondenceTemplatesPage } from "./pages/TraineeCorrespondenceTemplatesPage";
@@ -46,6 +51,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={AuthExperimentPage} />
+      <Route path="/recover" component={PasswordRecoveryPage} />
+      <Route path="/approvals" component={IS_PREVIEW_MODE ? () => <PreviewWorkspace workspace="archive" /> : ApprovalsPage} />
+      <Route path="/delegation" component={IS_PREVIEW_MODE ? () => <PreviewWorkspace workspace="people" /> : DelegationPage} />
+      <Route path="/owner-kpi" component={IS_PREVIEW_MODE ? () => <PreviewWorkspace workspace="reports" /> : OwnerKpiPage} />
+      <Route path="/rotation" component={IS_PREVIEW_MODE ? () => <PreviewWorkspace workspace="reports" /> : RotationPage} />
+      <Route path="/personal-settings" component={PersonalSettingsPage} />
       <Route path="/design-preview" component={MinimalJusticePreviewPage} />
       <Route path="/emerald-glass-preview" component={EmeraldGlassPreviewPage} />
       <Route path="/executive-paper-preview" component={ExecutivePaperPreviewPage} />

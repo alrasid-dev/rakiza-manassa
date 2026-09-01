@@ -190,6 +190,20 @@ import { deleteInternalMailRule, deleteInternalMailTemplate, getInternalMailFold
 import { removeFcmToken, sendFcmToProfile, upsertFcmToken } from "../fcm-service";
 import { linkFirebaseIdentity, verifyFirebaseIdToken } from "../firebase-auth-service";
 import { getDb } from "../db";
+import {
+  cancelPermissionDelegation,
+  createPermissionDelegation,
+  getOwnerLeadershipKpis,
+  getWorkPreferences,
+  globalSearch,
+  listOrganizationUnitsIncludingArchived,
+  listPermissionDelegations,
+  passkeyEnrollmentStatus,
+  requestOtpByPhone,
+  setOrganizationUnitActive,
+  updateWorkPreferences,
+} from "../platform-completion-service";
+import { summarizeAttendanceRecords } from "../platform-completion";
 
 function requestOrigin(req: { protocol: string; get(name: string): string | undefined }) {
   const protocol = req.get("x-forwarded-proto")?.split(",")[0]?.trim() || req.protocol;
@@ -279,8 +293,10 @@ async function hasLeadershipPlatformScope(user: { id: number; role: "user" | "ad
 }
 
 async function requireLeadershipWorkloadObservatoryAccess(user: { id: number; role: "user" | "admin"; email: string | null }) {
+  const permission = await permissionForUser(user);
+  if (permission === "full_control") return;
   const roles = await rolesForUser(user);
-  if (!roles.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary")) throw new TRPCError({ code: "FORBIDDEN", message: "مرصد ضغط العمل متاح لرئيس المحكمة والأمين ومساعد الرئيس فقط." });
+  if (!roles.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary")) throw new TRPCError({ code: "FORBIDDEN", message: "مرصد ضغط العمل متاح للمالك ورئيس المحكمة والأمين ومساعد الرئيس فقط." });
 }
 
 async function managedUnitIdsForUser(user: { id: number; role: "user" | "admin"; email?: string | null }) {
@@ -482,6 +498,13 @@ export const courtRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "تعذر إرسال رمز التحقق." });
       }
     }),
+    requestByPhone: publicProcedure.input(z.object({ phone: z.string().trim().min(9).max(20) })).mutation(async ({ ctx, input }) => {
+      try {
+        return await requestOtpByPhone({ phone: input.phone, requestIp: ctx.req.ip });
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "تعذر إرسال رمز التحقق عبر الجوال." });
+      }
+    }),
     verify: publicProcedure.input(z.object({ officialEmail: z.string().trim().email().max(320), code: z.string().regex(/^\d{6}$/, "يجب إدخال ستة أرقام.") })).mutation(async ({ ctx, input }) => {
       const result = await verifyOtpCode(input);
       if (!result.verified) return result;
@@ -512,10 +535,11 @@ export const courtRouter = router({
       ctx.res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
       return { verified: true as const };
     }),
+    enrollmentStatus: protectedProcedure.query(async ({ ctx }) => passkeyEnrollmentStatus(ctx.user.id)),
   }),
 
   registration: router({
-    submit: publicProcedure.input(z.object({ fullName: z.string().trim().min(12).max(240), officialEmail: z.string().trim().email().max(320).refine(value => isAllowedRegistrationEmail(value), "يجب استخدام البريد الرسمي المنتهي بـ moj.gov.sa أو البريد المصرح به لمالك رَكيزة."), notificationEmail: z.string().trim().email().max(320), privacyNoticeVersion: z.string().trim().min(1).max(40), privacyAcknowledged: z.literal(true) })).mutation(({ input }) => submitRegistrationRequest(input)),
+    submit: publicProcedure.input(z.object({ fullName: z.string().trim().min(12).max(240), officialEmail: z.string().trim().email().max(320).refine(value => isAllowedRegistrationEmail(value), "يجب استخدام البريد الرسمي المنتهي بـ moj.gov.sa أو البريد المصرح به لمالك رَكيزة."), notificationEmail: z.string().trim().email().max(320), phone: z.string().trim().max(40).optional(), privacyNoticeVersion: z.string().trim().min(1).max(40), privacyAcknowledged: z.literal(true) })).mutation(({ input }) => submitRegistrationRequest(input)),
     list: protectedProcedure.query(async ({ ctx }) => {
       await requirePermission(ctx.user, "manage_access");
       return listRegistrationRequests();
@@ -1272,6 +1296,18 @@ export const courtRouter = router({
       const profile = await getProfileForUser(ctx.user.id);
       return profile?.unitId ? allUnits.filter(unit => unit.id === profile.unitId) : [];
     }),
+    setActive: protectedProcedure.input(z.object({ unitId: z.number().int().positive(), isActive: z.boolean() })).mutation(async ({ ctx, input }) => {
+      const roles = await rolesForUser(ctx.user);
+      const permission = await permissionForUser(ctx.user);
+      if (permission !== "full_control" && !roles.some(role => role === "court_president" || role === "court_secretary" || role === "human_resources_manager")) throw new TRPCError({ code: "FORBIDDEN", message: "إيقاف أو تفعيل قسم متاح للمالك ورئيس المحكمة والأمين والموارد البشرية فقط." });
+      return setOrganizationUnitActive({ ...input, actorUserId: ctx.user.id });
+    }),
+    archived: protectedProcedure.query(async ({ ctx }) => {
+      const permission = await permissionForUser(ctx.user);
+      const roles = await rolesForUser(ctx.user);
+      if (permission !== "full_control" && !roles.some(role => role === "court_president" || role === "court_secretary")) throw new TRPCError({ code: "FORBIDDEN", message: "عرض الأقسام المؤرشفة متاح للقيادة العليا فقط." });
+      return listOrganizationUnitsIncludingArchived();
+    }),
   }),
 
   hierarchy: router({
@@ -1406,7 +1442,7 @@ export const courtRouter = router({
     }),
     currentWindow: protectedProcedure.query(async ({ ctx }) => {
       const { profile } = await requireSelfAttendanceProfile(ctx.user);
-      const eligible = profile.personType === "judge" || profile.attendanceMode === "remote" || profile.attendanceMode === "mixed";
+      const eligible = profile.status !== "inactive" && profile.status !== "on_leave";
       if (!eligible) return { kind: "none" as const, shiftName: null };
       return getAttendanceWindowForProfile(profile.id);
     }),
@@ -1428,10 +1464,11 @@ export const courtRouter = router({
         const isSelfRecord = selfProfile?.id === input.profileId;
         if (isSelfRecord) {
           const { profile } = await requireSelfAttendanceProfile(ctx.user);
-          const hasEligibleAttendanceMode = profile.personType === "judge" || profile.attendanceMode === "remote" || profile.attendanceMode === "mixed";
-          if (!hasEligibleAttendanceMode || input.profileId !== profile.id) throw new TRPCError({ code: "FORBIDDEN", message: "يقتصر تسجيل الحضور الذاتي على ملف القاضي أو العامل عن بعد المخول." });
+          const hasEligibleAttendanceMode = profile.status !== "inactive" && profile.status !== "on_leave";
+          if (!hasEligibleAttendanceMode || input.profileId !== profile.id) throw new TRPCError({ code: "FORBIDDEN", message: "يقتصر تسجيل الحضور الذاتي على ملفك النشط المرتبط بالحساب." });
           const attendanceWindow = await getAttendanceWindowForProfile(profile.id);
-          if (attendanceWindow.kind !== "check_in") throw new TRPCError({ code: "CONFLICT", message: "تسجيل الحضور الذاتي متاح فقط خلال نافذة الحضور المحددة في ورديتك." });
+          if (attendanceWindow.kind === "check_out") throw new TRPCError({ code: "CONFLICT", message: "نافذة الانصراف مفتوحة الآن. سجّل انصرافك بدلاً من حضور جديد." });
+          if (attendanceWindow.kind !== "check_in" && !attendanceWindow.workingDay) throw new TRPCError({ code: "CONFLICT", message: "تسجيل الحضور الذاتي متاح في أيام الوردية فقط." });
         } else if (!isLeadership) {
           throw new TRPCError({ code: "FORBIDDEN", message: "يقتصر تسجيل الحضور الذاتي على ملفك المرتبط، ولا يمكنك تسجيل حضور ملف آخر." });
         }
@@ -1461,10 +1498,11 @@ export const courtRouter = router({
     }),
     checkout: protectedProcedure.mutation(async ({ ctx }) => {
       const { profile } = await requireSelfAttendanceProfile(ctx.user);
-      const eligible = profile.personType === "judge" || profile.attendanceMode === "remote" || profile.attendanceMode === "mixed";
-      if (!eligible) throw new TRPCError({ code: "FORBIDDEN", message: "تسجيل الانصراف الذاتي متاح للقاضي أو العامل عن بعد المخول فقط." });
+      const eligible = profile.status !== "inactive" && profile.status !== "on_leave";
+      if (!eligible) throw new TRPCError({ code: "FORBIDDEN", message: "تسجيل الانصراف الذاتي متاح لملفك النشط فقط." });
       const attendanceWindow = await getAttendanceWindowForProfile(profile.id);
-      if (attendanceWindow.kind !== "check_out") throw new TRPCError({ code: "CONFLICT", message: "تسجيل الانصراف الذاتي متاح فقط خلال نافذة الانصراف المحددة في ورديتك." });
+      if (attendanceWindow.kind === "check_in") throw new TRPCError({ code: "CONFLICT", message: "تسجيل الانصراف الذاتي متاح فقط خلال نافذة الانصراف المحددة في ورديتك." });
+      if (attendanceWindow.kind !== "check_out" && !attendanceWindow.workingDay) throw new TRPCError({ code: "CONFLICT", message: "تسجيل الانصراف الذاتي متاح في أيام الوردية فقط." });
       return recordAttendanceCheckout({ profileId: profile.id, checkOutAt: new Date(), actorUserId: ctx.user.id });
     }),
   }),
@@ -1616,5 +1654,58 @@ export const courtRouter = router({
       await linkImportBatchAsTraineeSource(input.importBatchId, ctx.user.id);
       return { success: true };
     }),
+  }),
+
+  workPreferences: router({
+    mine: protectedProcedure.query(({ ctx }) => getWorkPreferences(ctx.user.id)),
+    update: protectedProcedure.input(z.object({ workMode: z.enum(["employee", "manager"]).optional(), notificationsEnabled: z.boolean().optional(), dndUntil: z.date().nullable().optional(), seenHelpKeys: z.array(z.string().trim().min(1).max(80)).max(80).optional() })).mutation(({ ctx, input }) => updateWorkPreferences({ userId: ctx.user.id, ...input })),
+  }),
+
+  delegation: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const permission = await permissionForUser(ctx.user);
+      const roles = await rolesForUser(ctx.user);
+      if (permission !== "full_control" && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "التفويض المؤقت متاح لرئيس المحكمة والمالك فقط." });
+      return listPermissionDelegations(ctx.user.id, permission === "full_control");
+    }),
+    create: protectedProcedure.input(z.object({ delegateUserId: z.number().int().positive(), role: z.enum(["assistant_president", "court_secretary", "human_resources_manager", "department_manager", "performance_monitor", "trainee_affairs_manager"]), unitId: z.number().int().positive().optional(), title: z.string().trim().min(5).max(240), startsAt: z.date(), endsAt: z.date(), notes: z.string().trim().max(2000).optional() })).mutation(async ({ ctx, input }) => {
+      const permission = await permissionForUser(ctx.user);
+      const roles = await rolesForUser(ctx.user);
+      if (permission !== "full_control" && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "إنشاء التفويض متاح لرئيس المحكمة والمالك فقط." });
+      return createPermissionDelegation({ ...input, grantorUserId: ctx.user.id });
+    }),
+    cancel: protectedProcedure.input(z.object({ delegationId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      const permission = await permissionForUser(ctx.user);
+      const roles = await rolesForUser(ctx.user);
+      if (permission !== "full_control" && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "إلغاء التفويض متاح لرئيس المحكمة والمالك فقط." });
+      return cancelPermissionDelegation({ ...input, actorUserId: ctx.user.id });
+    }),
+    users: protectedProcedure.query(async ({ ctx }) => {
+      const permission = await permissionForUser(ctx.user);
+      const roles = await rolesForUser(ctx.user);
+      if (permission !== "full_control" && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "قائمة المفوض إليهم متاحة لرئيس المحكمة والمالك فقط." });
+      return listPlatformUsersForRoleAssignment();
+    }),
+  }),
+
+  search: router({
+    global: protectedProcedure.input(z.object({ query: z.string().trim().min(2).max(120) })).query(async ({ ctx, input }) => {
+      await requirePermission(ctx.user, "view");
+      return globalSearch({ query: input.query, userId: ctx.user.id });
+    }),
+  }),
+
+  ownerKpis: protectedProcedure.query(async ({ ctx }) => {
+    const permission = await permissionForUser(ctx.user);
+    const roles = await rolesForUser(ctx.user);
+    if (permission !== "full_control" && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "مؤشرات القيادة العليا متاحة للمالك ورئيس المحكمة فقط." });
+    return getOwnerLeadershipKpis();
+  }),
+
+  attendanceSummary: protectedProcedure.input(z.object({ period: z.enum(["daily", "weekly", "monthly"]).default("daily") }).optional()).query(async ({ ctx, input }) => {
+    const permission = await requirePermission(ctx.user, "view");
+    const period = input?.period ?? "daily";
+    const records = await hasLeadershipPlatformScope(ctx.user, permission) ? await listAttendance() : await listAttendanceForProfile((await requireSelfAttendanceProfile(ctx.user)).profile.id);
+    return summarizeAttendanceRecords(records.map(item => ({ status: item.attendance.status, recordDate: item.attendance.recordDate })), period);
   }),
 });

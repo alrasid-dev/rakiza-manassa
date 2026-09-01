@@ -168,6 +168,9 @@ export default function Home() {
   const leadershipRoles = roles.data ?? [];
   const leadership = permission.data === "full_control" || permission.data === "general_view" || Boolean(leadershipRoles.some(role => role === "court_president" || role === "assistant_president"));
   const canManageTaskActions = permission.data === "full_control" || Boolean(leadershipRoles.some(role => role === "court_president" || role === "assistant_president" || role === "court_secretary" || role === "department_manager" || role === "trainee_affairs_manager"));
+  const showOwnerKpis = permission.data === "full_control" || leadershipRoles.includes("court_president");
+  const ownerKpisApi = (trpc.court as any).ownerKpis;
+  const ownerKpis = ownerKpisApi?.useQuery ? ownerKpisApi.useQuery(undefined, { enabled: showOwnerKpis }) : { data: null };
   const metrics = (dashboard.data ?? {}) as Metrics;
   const manager = !leadership && metrics.scope === "unit";
   const overdueTasks = metrics.overdueTasks ?? 0;
@@ -234,6 +237,8 @@ export default function Home() {
         <button type="button" onClick={() => setLocation(leadership ? "/reports" : "/tasks")} className="inline-flex items-center gap-2 rounded-lg bg-[#2d6b4f] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#245f43]">{leadership ? "التقرير الشامل" : "عرض المهام"}<ArrowLeft className="h-4 w-4" /></button>
       </div>
     </section>
+
+    {showOwnerKpis && ownerKpis.data ? <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="مؤشرات القيادة"><article className="rounded-xl bg-[#e9f3ea] p-4"><p className="text-[11px] font-bold">متوسط إنجاز الأقسام</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.departmentCompletionRate}%</p></article><article className="rounded-xl bg-[#fff4ec] p-4"><p className="text-[11px] font-bold">أقسام بضغط مرتفع</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.highPressureDepartments?.length ?? 0}</p></article><article className="rounded-xl bg-[#fbeae5] p-4"><p className="text-[11px] font-bold">مساءلات مفتوحة</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.accountabilityCount}</p></article><button type="button" onClick={() => setLocation("/owner-kpi")} className="rounded-xl bg-[#f4f2e8] p-4 text-right"><p className="text-[11px] font-bold">متوسط وقت الإنجاز</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.averageCompletionHours ?? "—"}</p><p className="mt-1 text-[10px] font-bold text-[#006c35]">فتح مؤشرات القيادة</p></button></section> : null}
 
     {isWidgetVisible("overview") && <section className="mt-6 grid gap-3 xl:grid-cols-[minmax(0,1fr)_16.5rem]" aria-label="ملخص حالات المهام والتنبيهات">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><ReferenceMetric label="مهام اليوم" value={number(todayTasks.length || metrics.openTasks)} note="المهام الظاهرة اليوم" icon={ListChecks} tone="border-[#c7d9c8] bg-[#e7f0e7] text-[#2d684a]" /><ReferenceMetric label="قرب موعدها" value={number(dueSoonTaskCount || dueTasks)} note="تحتاج مراجعة قبل الاستحقاق" icon={BellRing} tone="border-[#e2d3a5] bg-[#f5edd8] text-[#80642b]" /><ReferenceMetric label="بدأ التنفيذ" value={number(inProgressTaskCount)} note="قيد المعالجة الآن" icon={Settings2} tone="border-[#c6d8c7] bg-[#e4eee5] text-[#35634c]" /><ReferenceMetric label="بانتظار اعتمادي" value={number(reviewTaskCount)} note="تحت المراجعة أو الاعتماد" icon={ClipboardCheck} tone="border-[#d1dccd] bg-[#edf1e8] text-[#486455]" /><ReferenceMetric label="مهام متأخرة" value={number(overdueTasks)} note={overdueTasks ? "تحتاج إجراءً اليوم" : "لا يوجد تأخر"} icon={ClipboardCheck} tone="border-[#e2c9c0] bg-[#f8e6e1] text-[#a8493b]" /></div>

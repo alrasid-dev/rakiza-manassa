@@ -46,4 +46,11 @@ describe("navigation sections", () => {
     expect(navigationBadgeForItem("طلبات الاعتماد", { mail: 1, chat: 2, taskAttention: 4, pendingApprovals: 3 })).toEqual({ count: 3, accessibleLabel: "3 طلبات اعتماد معلقة" });
     expect(navigationSections.flatMap(section => section.items).find(item => item.label === "طلبات الاعتماد")).toMatchObject({ path: "/approvals", operationsOnly: true });
   });
+
+  it("يميز أيقونات الإعدادات والتفويض والتسجيل حتى لا تتشابه على المستخدم", () => {
+    const items = navigationSections.flatMap(section => section.items);
+    expect(items.find(item => item.label === "إعدادات الموظف")?.icon).not.toBe(items.find(item => item.label === "إعدادات المنصة")?.icon);
+    expect(items.find(item => item.label === "تفويض")?.icon).not.toBe(items.find(item => item.label === "طلبات التسجيل وإدارة المستخدمين")?.icon);
+    expect(items.find(item => item.label === "مؤشرات القيادة")?.icon).not.toBe(items.find(item => item.label === "شؤون القضاة")?.icon);
+  });
 });
