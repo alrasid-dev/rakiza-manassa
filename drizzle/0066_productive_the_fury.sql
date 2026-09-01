@@ -1,0 +1,1 @@
+ALTER TABLE `notifications` MODIFY COLUMN `category` enum('trainee_due_soon','task_due','delay_alert','access_request','support_ticket','attendance_confirmation','security_alert','performance_recommendation','chat_message') NOT NULL;

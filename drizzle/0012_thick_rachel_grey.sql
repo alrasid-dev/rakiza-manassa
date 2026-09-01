@@ -1,0 +1,1 @@
+ALTER TABLE `access_grants` MODIFY COLUMN `permission` enum('full_control','general_view','employee','trainee') NOT NULL;

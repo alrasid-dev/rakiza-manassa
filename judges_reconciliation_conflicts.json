@@ -1,0 +1,275 @@
+{
+  "matched": 40,
+  "uniqueMatchedIds": 34,
+  "reusedProfiles": [
+    {
+      "profileId": 30002,
+      "occurrences": 2
+    },
+    {
+      "profileId": 30006,
+      "occurrences": 3
+    },
+    {
+      "profileId": 30023,
+      "occurrences": 2
+    },
+    {
+      "profileId": 30029,
+      "occurrences": 2
+    },
+    {
+      "profileId": 30031,
+      "occurrences": 2
+    }
+  ],
+  "conflicts": [
+    {
+      "source": {
+        "row": 3,
+        "formation": "الثاني",
+        "name": "حمد حمود عبدالله الباحوث",
+        "email": "hbahouth@moj.gov.sa"
+      },
+      "match": {
+        "id": 30002,
+        "fullName": "حمد حمود عبدالله الباحوث",
+        "email": "hbahouth@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثالث والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 7,
+        "formation": "السادس",
+        "name": "مكلف حاتم محمد عبدالله الفالح",
+        "email": ""
+      },
+      "match": {
+        "id": 30006,
+        "fullName": "حاتم محمد عبدالله الفالح",
+        "email": "hfaleh@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثامن والعشرون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 24,
+        "formation": "الثالث والعشرون",
+        "name": "مكلف رياض زاهر صالح الشهري",
+        "email": ""
+      },
+      "match": {
+        "id": 30023,
+        "fullName": "رياض زاهر صالح الشهري",
+        "email": "rzshehry@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "السابع والعشرون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 26,
+        "formation": "الخامس والعشرون",
+        "name": "مكلف حاتم محمد عبدالله الفالح",
+        "email": ""
+      },
+      "match": {
+        "id": 30006,
+        "fullName": "حاتم محمد عبدالله الفالح",
+        "email": "hfaleh@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثامن والعشرون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 28,
+        "formation": "السابع والعشرون",
+        "name": "رياض زاهر صالح الشهري",
+        "email": "rzshehry@moj.gov.sa"
+      },
+      "match": {
+        "id": 30023,
+        "fullName": "رياض زاهر صالح الشهري",
+        "email": "rzshehry@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "السابع والعشرون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": false,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 29,
+        "formation": "الثامن والعشرون",
+        "name": "حاتم محمد عبدالله الفالح",
+        "email": "hfaleh@moj.gov.sa"
+      },
+      "match": {
+        "id": 30006,
+        "fullName": "حاتم محمد عبدالله الفالح",
+        "email": "hfaleh@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثامن والعشرون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": false,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 33,
+        "formation": "الثاني والثلاثون",
+        "name": "فهد عبدالله محمد الخضيري",
+        "email": "maohajri@moj.gov.sa"
+      },
+      "match": {
+        "id": 30029,
+        "fullName": "فهد عبدالله محمد الخضيري",
+        "email": "maohajri@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "التاسع والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 34,
+        "formation": "الثالث والثلاثون",
+        "name": "مكلف حمد حمود عبدالله الباحوث",
+        "email": ""
+      },
+      "match": {
+        "id": 30002,
+        "fullName": "حمد حمود عبدالله الباحوث",
+        "email": "hbahouth@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثالث والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": false,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 36,
+        "formation": "الخامس والثلاثون",
+        "name": "مكلف احمد عبدالله محمد الغامدي",
+        "email": ""
+      },
+      "match": {
+        "id": 30031,
+        "fullName": "احمد عبدالله محمد الغامدي",
+        "email": "aalghamide@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثامن والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": true,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 39,
+        "formation": "الثامن والثلاثون",
+        "name": "احمد عبدالله محمد الغامدي",
+        "email": "aalghamide@moj.gov.sa"
+      },
+      "match": {
+        "id": 30031,
+        "fullName": "احمد عبدالله محمد الغامدي",
+        "email": "aalghamide@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "الثامن والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": false,
+      "emailMismatch": false
+    },
+    {
+      "source": {
+        "row": 40,
+        "formation": "التاسع والثلاثون",
+        "name": "مكلف فهد عبدالله محمد الخضيري",
+        "email": ""
+      },
+      "match": {
+        "id": 30029,
+        "fullName": "فهد عبدالله محمد الخضيري",
+        "email": "maohajri@moj.gov.sa",
+        "unitId": 90005,
+        "formation": "التاسع والثلاثون",
+        "status": "active"
+      },
+      "reused": true,
+      "formationMismatch": false,
+      "emailMismatch": false
+    }
+  ],
+  "missingEmails": [
+    {
+      "row": 7,
+      "formation": "السادس",
+      "name": "مكلف حاتم محمد عبدالله الفالح",
+      "email": ""
+    },
+    {
+      "row": 24,
+      "formation": "الثالث والعشرون",
+      "name": "مكلف رياض زاهر صالح الشهري",
+      "email": ""
+    },
+    {
+      "row": 26,
+      "formation": "الخامس والعشرون",
+      "name": "مكلف حاتم محمد عبدالله الفالح",
+      "email": ""
+    },
+    {
+      "row": 34,
+      "formation": "الثالث والثلاثون",
+      "name": "مكلف حمد حمود عبدالله الباحوث",
+      "email": ""
+    },
+    {
+      "row": 36,
+      "formation": "الخامس والثلاثون",
+      "name": "مكلف احمد عبدالله محمد الغامدي",
+      "email": ""
+    },
+    {
+      "row": 40,
+      "formation": "التاسع والثلاثون",
+      "name": "مكلف فهد عبدالله محمد الخضيري",
+      "email": ""
+    }
+  ]
+}

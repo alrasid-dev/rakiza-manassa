@@ -1,0 +1,2 @@
+ALTER TABLE `trainee_assignments` ADD `supervisingJudgeProfileId` int;--> statement-breakpoint
+CREATE INDEX `trainee_assignments_supervising_judge_idx` ON `trainee_assignments` (`supervisingJudgeProfileId`);

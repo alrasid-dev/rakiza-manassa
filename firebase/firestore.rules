@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // بيانات الهوية المحدودة فقط: uid والبريد والاسم ومرجع ملف رَكيزة وآخر مزامنة.
+    // يكتب الخادم باستخدام Service Account ويتجاوز هذه القواعد؛ لا يُسمح للعميل بتعديلها.
+    match /rakizaUsers/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

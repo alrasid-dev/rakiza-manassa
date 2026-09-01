@@ -1,0 +1,1 @@
+ALTER TABLE `scheduled_job_configs` ADD `attendanceTargetAudience` varchar(40) DEFAULT 'all' NOT NULL;

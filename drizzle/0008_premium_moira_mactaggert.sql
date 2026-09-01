@@ -1,0 +1,1 @@
+ALTER TABLE `scheduled_job_configs` MODIFY COLUMN `jobType` enum('trainee_due_soon','daily_task_reminder','task_escalation','leave_status_refresh') NOT NULL;

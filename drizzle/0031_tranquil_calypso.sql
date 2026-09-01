@@ -1,0 +1,2 @@
+ALTER TABLE `notifications` MODIFY COLUMN `category` enum('trainee_due_soon','task_due','delay_alert','access_request','support_ticket','attendance_confirmation') NOT NULL;--> statement-breakpoint
+ALTER TABLE `scheduled_job_configs` MODIFY COLUMN `jobType` enum('trainee_due_soon','daily_task_reminder','task_escalation','leave_status_refresh','trainee_excel_sync','support_ticket_escalation','attendance_confirmation') NOT NULL;

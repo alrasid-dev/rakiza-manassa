@@ -1,0 +1,1 @@
+ALTER TABLE `correspondence_recipients` MODIFY COLUMN `recipientType` enum('trainee_copy','manager_copy','direct_recipient','president_mandatory_copy') NOT NULL;

@@ -1,0 +1,2 @@
+ALTER TABLE `conversation_participants` ADD `typingUntil` timestamp;--> statement-breakpoint
+CREATE INDEX `conversation_participants_typing_idx` ON `conversation_participants` (`conversationId`,`typingUntil`);

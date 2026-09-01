@@ -1,0 +1,304 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --rakiza-canvas: #b6b7af;
+  --rakiza-surface: #f8f8f3;
+  --rakiza-surface-muted: #eff0e9;
+  --rakiza-border: #cfd7ca;
+  --rakiza-olive: #3f7354;
+  --rakiza-olive-strong: #245f43;
+  --rakiza-olive-soft: #dce9da;
+  --rakiza-ink: #243d32;
+  --rakiza-muted: #6f7e75;
+  --primary: oklch(0.43 0.08 151);
+  --primary-foreground: oklch(0.985 0.008 105);
+  --sidebar-primary: oklch(0.46 0.085 151);
+  --sidebar-primary-foreground: oklch(0.985 0.008 105);
+  --chart-1: oklch(0.67 0.1 151);
+  --chart-2: oklch(0.56 0.105 151);
+  --chart-3: oklch(0.46 0.085 151);
+  --chart-4: oklch(0.38 0.07 151);
+  --chart-5: oklch(0.31 0.055 151);
+  --radius: 0.75rem;
+  --background: oklch(0.78 0.012 105);
+  --foreground: oklch(0.28 0.035 151);
+  --card: oklch(0.975 0.006 105);
+  --card-foreground: oklch(0.28 0.035 151);
+  --popover: oklch(0.975 0.006 105);
+  --popover-foreground: oklch(0.28 0.035 151);
+  --secondary: oklch(0.95 0.012 105);
+  --secondary-foreground: oklch(0.35 0.04 151);
+  --muted: oklch(0.935 0.01 105);
+  --muted-foreground: oklch(0.52 0.025 151);
+  --accent: oklch(0.91 0.025 135);
+  --accent-foreground: oklch(0.31 0.05 151);
+  --destructive: oklch(0.58 0.105 27);
+  --destructive-foreground: oklch(0.985 0.008 105);
+  --border: oklch(0.84 0.018 125);
+  --input: oklch(0.84 0.018 125);
+  --ring: oklch(0.5 0.085 151);
+  --sidebar: oklch(0.29 0.05 151);
+  --sidebar-foreground: oklch(0.94 0.012 105);
+  --sidebar-accent: oklch(0.36 0.06 151);
+  --sidebar-accent-foreground: oklch(0.98 0.008 105);
+  --sidebar-border: oklch(0.42 0.04 151);
+  --sidebar-ring: oklch(0.58 0.085 151);
+}
+
+.dark {
+  --rakiza-canvas: #101914;
+  --rakiza-surface: #17231c;
+  --rakiza-surface-muted: #1d2d24;
+  --rakiza-border: #385343;
+  --rakiza-olive: #9bc785;
+  --rakiza-olive-strong: #c1dfa7;
+  --rakiza-olive-soft: #284835;
+  --rakiza-ink: #eef4e9;
+  --rakiza-muted: #b4c3b5;
+  --primary: oklch(0.75 0.10 142);
+  --primary-foreground: oklch(0.18 0.035 145);
+  --sidebar-primary: oklch(0.75 0.10 142);
+  --sidebar-primary-foreground: oklch(0.18 0.035 145);
+  --background: oklch(0.18 0.02 145);
+  --foreground: oklch(0.94 0.018 120);
+  --card: oklch(0.23 0.025 145);
+  --card-foreground: oklch(0.94 0.018 120);
+  --popover: oklch(0.23 0.025 145);
+  --popover-foreground: oklch(0.94 0.018 120);
+  --secondary: oklch(0.28 0.03 145);
+  --secondary-foreground: oklch(0.88 0.02 120);
+  --muted: oklch(0.29 0.025 145);
+  --muted-foreground: oklch(0.76 0.02 120);
+  --accent: oklch(0.33 0.055 145);
+  --accent-foreground: oklch(0.95 0.018 120);
+  --destructive: oklch(0.61 0.11 28);
+  --destructive-foreground: oklch(0.97 0.01 120);
+  --border: oklch(0.39 0.03 145);
+  --input: oklch(0.39 0.03 145);
+  --ring: oklch(0.72 0.095 142);
+  --chart-1: oklch(0.74 0.10 142);
+  --chart-2: oklch(0.66 0.09 142);
+  --chart-3: oklch(0.57 0.075 142);
+  --chart-4: oklch(0.50 0.06 142);
+  --chart-5: oklch(0.42 0.045 142);
+  --sidebar: oklch(0.19 0.035 145);
+  --sidebar-foreground: oklch(0.94 0.018 120);
+  --sidebar-accent: oklch(0.30 0.06 145);
+  --sidebar-accent-foreground: oklch(0.96 0.018 120);
+  --sidebar-border: oklch(0.38 0.035 145);
+  --sidebar-ring: oklch(0.72 0.095 142);
+}
+
+/* معظم مكوّنات ركيزة تستخدم درجات هوية صريحة؛ تعيد هذه الطبقة ربطها بالهوية الداكنة عند تبديل النمط. */
+.dark .rakiza-theme-root, .dark { background-color: var(--rakiza-canvas); color: var(--rakiza-ink); }
+.dark [class*="bg-[#b6b7af]"] { background-color: #101914 !important; }
+.dark [class*="bg-[#f8f8f3]"], .dark [class*="bg-[#f7f5ef]"], .dark [class*="bg-[#f7f6ef]"], .dark [class*="bg-[#fcfbf7]"], .dark [class*="bg-white"] { background-color: #1d211b !important; }
+.dark [class*="bg-[#f2f3ed]"], .dark [class*="bg-[#f1f2ec]"], .dark [class*="bg-[#f1f3ed]"], .dark [class*="bg-[#f1f4ee]"], .dark [class*="bg-[#eff0e9]"] { background-color: #1d2d24 !important; }
+.dark [class*="bg-[#f3f5ef]"], .dark [class*="bg-[#f5f8f3]"], .dark [class*="bg-[#f7faf5]"], .dark [class*="bg-[#e9f2ea]"], .dark [class*="bg-[#edf4ee]"] { background-color: #203629 !important; }
+.dark [class*="bg-[#f7faf7]"], .dark [class*="bg-[#f5f9f5]"], .dark [class*="bg-[#fbfdfb]"], .dark [class*="bg-[#fafcf9]"] { background-color: #2b2921 !important; }
+.dark [class*="bg-[#edf1ea]"], .dark [class*="bg-[#eef5ec]"], .dark [class*="bg-[#e2eee3]"], .dark [class*="bg-[#e4f0e4]"], .dark [class*="bg-[#dce9da]"] { background-color: #284835 !important; }
+.dark [class*="bg-[#f8e6e1]"], .dark [class*="bg-[#f9ece8]"] { background-color: #422825 !important; }
+.dark [class*="bg-[#f5edd8]"], .dark [class*="bg-[#f6f0df]"] { background-color: #403720 !important; }
+.dark [class*="bg-[#fbfaf6]"], .dark [class*="bg-[#fafbf8]"], .dark [class*="bg-[#fbfaf5]"], .dark [class*="bg-[#fffdf8]"], .dark [class*="bg-[#fffdf6]"] { background-color: #1d211b !important; }
+.dark [class*="bg-[#edf3eb]"], .dark [class*="bg-[#e9f0ea]"], .dark [class*="bg-[#f7fbf7]"], .dark [class*="bg-[#f7f8f3]"], .dark [class*="bg-[#f6faf6]"] { background-color: #1d2d24 !important; }
+.dark [class*="bg-[#eef1f5]"] { background-color: #24302b !important; }
+.dark [class*="bg-[#fffaf0]"], .dark [class*="bg-[#f7efe0]"], .dark [class*="bg-[#fff8e8]"], .dark [class*="bg-[#fff9e8]"], .dark [class*="bg-[#fff8db]"], .dark [class*="bg-[#fff3d6]"] { background-color: #403720 !important; }
+.dark [class*="bg-[#fbe9e4]"], .dark [class*="bg-[#fff0ed]"], .dark [class*="bg-[#fbece7]"] { background-color: #422825 !important; }
+.dark [class*="bg-[#e7f0e7]"], .dark [class*="bg-[#e4eee5]"], .dark [class*="bg-[#edf1e8]"], .dark [class*="bg-[#f9faf5]"], .dark [class*="bg-[#eff1ea]"], .dark [class*="bg-[#e6eee5]"], .dark [class*="bg-[#e2f0e4]"], .dark [class*="bg-[#e1eee5]"], .dark [class*="bg-[#e6f0e7]"] { background-color: #203629 !important; }
+.dark [class*="border-[#"] { border-color: #385343 !important; }
+.dark [class*="text-[#243d32]"], .dark [class*="text-[#244637]"], .dark [class*="text-[#284239]"], .dark [class*="text-[#304b40]"], .dark [class*="text-[#315348]"], .dark [class*="text-[#31594d]"] { color: #eef4e9 !important; }
+.dark [class*="text-[#12352f]"], .dark [class*="text-[#243a32]"], .dark [class*="text-[#29463b]"], .dark [class*="text-[#385449]"], .dark [class*="text-[#425a4d]"] { color: #edf5e9 !important; }
+.dark [class*="text-[#66786e]"], .dark [class*="text-[#698075]"], .dark [class*="text-[#6c7b73]"], .dark [class*="text-[#6f7e75]"], .dark [class*="text-[#718078]"], .dark [class*="text-[#748078]"], .dark [class*="text-[#77867d]"], .dark [class*="text-[#52665a]"], .dark [class*="text-[#426253]"] { color: #b4cdb8 !important; }
+.dark [class*="text-[#006c35]"], .dark [class*="text-[#2d6b4f]"], .dark [class*="text-[#2d684a]"], .dark [class*="text-[#245f43]"] { color: #b5dc9e !important; }
+.dark [class*="text-[#35634c]"], .dark [class*="text-[#486455]"], .dark [class*="text-[#25463a]"] { color: #d5e7d4 !important; }
+.dark [class*="text-[#4a785a]"], .dark [class*="text-[#758279]"] { color: #b4cdb8 !important; }
+.dark [class*="text-[#a8493b]"], .dark [class*="text-[#a64b3c]"] { color: #f3c5bb !important; }
+.dark [class*="text-[#80642b]"] { color: #ead69c !important; }
+
+@layer base {
+  html {
+    font-size: 17px;
+  }
+
+  /* تُستخدم أحجام دقيقة داخل الوسوم والبيانات الوصفية؛ لا تقل عن حد قراءة مناسب مع الخط العربي. */
+  .rakiza-theme-root [class*="text-[9px]"] { font-size: 0.6875rem; line-height: 1rem; }
+  .rakiza-theme-root [class*="text-[10px]"] { font-size: 0.735rem; line-height: 1.05rem; }
+  .rakiza-theme-root [class*="text-[11px]"] { font-size: 0.78rem; line-height: 1.15rem; }
+
+  /* تبقى كل إجراءات المهمة مرئية، لكن تُقرأ كوحدة واحدة بدلاً من صف متنافر من الشارات. */
+  .rakiza-theme-root [data-completion-transition] > span:last-child {
+    border: 1px solid color-mix(in srgb, var(--rakiza-border) 75%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--rakiza-surface-muted) 72%, transparent);
+    padding: 0.375rem;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  .rakiza-ai-presence {
+    will-change: box-shadow;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .rakiza-ai-presence {
+      animation: rakiza-ai-presence 2.8s ease-in-out infinite;
+    }
+
+    @keyframes rakiza-ai-presence {
+      0%, 100% { box-shadow: 0 10px 26px rgba(30, 61, 48, .18); }
+      50% { box-shadow: 0 10px 30px rgba(66, 118, 79, .33), 0 0 0 5px rgba(83, 139, 92, .08); }
+    }
+
+    .rakiza-olive-icon {
+      transform-origin: center;
+      transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    button:hover .rakiza-olive-icon,
+    button:focus-visible .rakiza-olive-icon {
+      transform: translateY(-1px) scale(1.08);
+    }
+
+    button:active .rakiza-olive-icon {
+      transform: scale(0.96);
+    }
+  }
+
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}
+
+/* تمنع مساحة إجراءات صف المهمة من التمدد بعرض محتواها فوق العمود المجاور. */
+.rakiza-theme-root .col-span-full.md\:col-start-5 {
+  min-width: 0;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 768px) {
+  .rakiza-theme-root .col-span-full.md\:col-start-5 {
+    max-width: 17rem;
+    justify-content: flex-end;
+  }
+}
+
+/* عند وجود العمود الجانبي للفريق، لا تتسع مساحة المهام لتخطيط سطح المكتب الكامل. */
+@media (min-width: 768px) and (max-width: 1535px) {
+  .rakiza-theme-root article[data-completion-transition] {
+    grid-template-columns: 2.4rem minmax(0, 1fr) 4.5rem !important;
+  }
+
+  .rakiza-theme-root article[data-completion-transition] .md\:block,
+  .rakiza-theme-root article[data-completion-transition] .md\:flex {
+    display: none;
+  }
+
+  .rakiza-theme-root article[data-completion-transition] .md\:hidden {
+    display: flex;
+  }
+
+  .rakiza-theme-root article[data-completion-transition] .col-span-full.md\:col-start-5 {
+    grid-column: 1 / -1;
+    margin-top: 0.25rem;
+    max-width: none;
+    justify-self: stretch;
+  }
+}

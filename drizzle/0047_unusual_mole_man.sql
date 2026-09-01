@@ -1,0 +1,1 @@
+ALTER TABLE `scheduled_job_configs` ADD `attendanceShiftEnabled` boolean DEFAULT false NOT NULL;

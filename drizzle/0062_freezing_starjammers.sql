@@ -1,0 +1,1 @@
+ALTER TABLE `internal_mail_messages` ADD `bodyHtml` text;

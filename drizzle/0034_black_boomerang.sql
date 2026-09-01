@@ -1,0 +1,2 @@
+ALTER TABLE `approval_requests` MODIFY COLUMN `entityType` enum('task','delay','decision','disciplinary_action','score_adjustment','department_manager_assignment') NOT NULL;--> statement-breakpoint
+ALTER TABLE `approval_requests` MODIFY COLUMN `currentRole` enum('human_resources_manager','court_secretary','assistant_president','court_president') NOT NULL;

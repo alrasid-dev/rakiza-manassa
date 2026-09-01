@@ -1,0 +1,1 @@
+ALTER TABLE `otp_challenges` ADD `maxAttempts` int DEFAULT 5 NOT NULL;

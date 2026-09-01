@@ -1,0 +1,1 @@
+ALTER TABLE `court_role_assignments` MODIFY COLUMN `role` enum('court_president','assistant_president','department_manager','performance_monitor','trainee_affairs_manager','technical_support_manager','technical_support_agent','administrative_staff','judicial_trainee','judge') NOT NULL;

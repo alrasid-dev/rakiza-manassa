@@ -1,0 +1,1 @@
+ALTER TABLE `document_records` ADD `reportPeriod` varchar(20) DEFAULT 'monthly' NOT NULL;

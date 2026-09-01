@@ -1,0 +1,1 @@
+ALTER TABLE `fcm_tokens` MODIFY COLUMN `token` varchar(1024) NOT NULL;

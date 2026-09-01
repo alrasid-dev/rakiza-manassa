@@ -1,0 +1,1 @@
+ALTER TABLE `approval_requests` MODIFY COLUMN `currentRole` enum('trainee_affairs_manager','human_resources_manager','court_secretary','assistant_president','court_president') NOT NULL;

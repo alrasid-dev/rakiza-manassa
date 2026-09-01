@@ -1,0 +1,2 @@
+ALTER TABLE `scheduled_job_configs` ADD `attendanceTargetProfileId` int;--> statement-breakpoint
+CREATE INDEX `scheduled_job_configs_attendance_target_idx` ON `scheduled_job_configs` (`attendanceTargetProfileId`);

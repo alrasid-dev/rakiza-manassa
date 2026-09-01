@@ -1,0 +1,1 @@
+ALTER TABLE `internal_mail_preferences` ADD `assistantReplyTone` enum('formal','concise') DEFAULT 'formal' NOT NULL;
