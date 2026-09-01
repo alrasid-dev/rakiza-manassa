@@ -22,6 +22,7 @@ import {
   FileUp,
   FileText,
   Gauge,
+  Gavel,
   Handshake,
   Headphones,
   KeyRound,
@@ -67,6 +68,7 @@ import FirstUseHelp from "./FirstUseHelp";
 import GlobalSearchBar from "./GlobalSearchBar";
 import PasskeyEnrollmentGate from "./PasskeyEnrollmentGate";
 import WorkModeToggle, { useWorkMode } from "./WorkModeToggle";
+import CourtEmblem from "./CourtEmblem";
 
 type WorkspacePermission = "full_control" | "general_view" | "employee" | "trainee" | null | undefined;
 export type AnnouncementPreview = { id: number; title: string; body: string };
@@ -91,8 +93,48 @@ export const navigationSections: { heading: string; collapsible?: boolean; items
   { heading: "رئاسة المحكمة", collapsible: true, items: [{ icon: Landmark, label: "مكتب رئيس المحكمة", path: "/", audiences: ["full_control", "general_view"] }, { icon: Activity, label: "مرصد ضغط العمل", path: "/leadership-workload", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Repeat, label: "المداورة", path: "/rotation", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Gauge, label: "مؤشرات القيادة", path: "/owner-kpi", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Handshake, label: "تفويض", path: "/delegation", audiences: ["full_control", "general_view"], leadershipOnly: true }, { icon: Network, label: "مساعد رئيس المحكمة", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Building2, label: "أمانة المحكمة", path: "/hierarchy", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "شؤون القضاة", path: "/judges", audiences: ["full_control", "general_view"] }, { icon: Headphones, label: "الدعم التقني", path: "/support", audiences: ["full_control", "general_view", "employee", "trainee"] }] },
   { heading: "شؤون الملازمين", collapsible: true, items: [{ icon: ShieldCheck, label: "تشغيل شؤون الملازمين", path: "/trainees", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: FileSpreadsheet, label: "بيانات Excel للملازمين", path: "/imports", audiences: ["full_control", "general_view"] }, { icon: FileText, label: "قوالب عروض شؤون الملازمين", path: "/trainee-correspondence-templates", audiences: ["full_control", "general_view", "employee"] }] },
   { heading: "الموارد البشرية", collapsible: true, items: [{ icon: UsersRound, label: "الموارد البشرية والموظفون", path: "/people", audiences: ["full_control", "general_view"] }, { icon: Clock3, label: "الحضور والانصراف", path: "/status?tab=attendance", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: CircleCheck, label: "تأكيد الحضور", path: "/status?tab=confirmation", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: CalendarOff, label: "الاستئذان والإجازات", path: "/status", audiences: ["full_control", "general_view", "employee", "trainee"] }, { icon: PackageCheck, label: "العهد والأصول", path: "/assets", audiences: ["full_control", "general_view", "employee"] }] },
-  { heading: "الإدارة والتقارير", collapsible: true, items: [{ icon: BadgeCheck, label: "طلبات الاعتماد", path: "/approvals", audiences: ["full_control", "general_view"], operationsOnly: true }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Download, label: "تنزيل بيانات القسم", path: "/data-exports", audiences: ["full_control", "general_view"] }, { icon: ScrollText, label: "سجل الحركة", path: "/activity-log", audiences: ["full_control", "general_view"] }, { icon: Scale, label: "القرارات والمساءلات", path: "/decisions", audiences: ["full_control", "general_view"] }, { icon: CalendarDays, label: "الاجتماعات والمحاضر", path: "/meetings", audiences: ["full_control", "general_view"] }, { icon: UserPlus, label: "طلبات التسجيل وإدارة المستخدمين", path: "/access-management", audiences: ["full_control"], ownerOnly: true }, { icon: Settings2, label: "وحدات رَكيزة وأيقوناتها", path: "/platform-modules", audiences: ["full_control"], ownerOnly: true }, { icon: KeyRound, label: "تفويض القيادة", path: "/leadership-access", audiences: ["full_control"], ownerOnly: true }, { icon: Network, label: "التسلسل الإداري", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Archive, label: "الأرشيف", path: "/archive", audiences: ["full_control", "general_view"] }, { icon: Files, label: "قوالب مراسلات القسم", path: "/department-templates", audiences: ["full_control", "general_view"] }] },
+  { heading: "الإدارة والتقارير", collapsible: true, items: [{ icon: BadgeCheck, label: "طلبات الاعتماد", path: "/approvals", audiences: ["full_control", "general_view"], operationsOnly: true }, { icon: FileBarChart2, label: "التقارير المنفصلة", path: "/reports", audiences: ["full_control", "general_view"] }, { icon: Download, label: "تنزيل بيانات القسم", path: "/data-exports", audiences: ["full_control", "general_view"] }, { icon: ScrollText, label: "سجل الحركة", path: "/activity-log", audiences: ["full_control", "general_view"] }, { icon: Gavel, label: "القرارات والمساءلات", path: "/decisions", audiences: ["full_control", "general_view"] }, { icon: CalendarDays, label: "الاجتماعات والمحاضر", path: "/meetings", audiences: ["full_control", "general_view"] }, { icon: UserPlus, label: "طلبات التسجيل وإدارة المستخدمين", path: "/access-management", audiences: ["full_control"], ownerOnly: true }, { icon: Settings2, label: "وحدات رَكيزة وأيقوناتها", path: "/platform-modules", audiences: ["full_control"], ownerOnly: true }, { icon: KeyRound, label: "تفويض القيادة", path: "/leadership-access", audiences: ["full_control"], ownerOnly: true }, { icon: Network, label: "التسلسل الإداري", path: "/hierarchy", audiences: ["full_control"], ownerOnly: true }, { icon: Archive, label: "الأرشيف", path: "/archive", audiences: ["full_control", "general_view"] }, { icon: Files, label: "قوالب مراسلات القسم", path: "/department-templates", audiences: ["full_control", "general_view"] }] },
 ];
+
+export type NavigationIconTone = "olive" | "gold" | "alert";
+
+export function navigationIconTone(sectionHeading: string, label: string): NavigationIconTone {
+  if (label === "المتعثرات" || label === "القرارات والمساءلات") return "alert";
+  if (sectionHeading === "رئاسة المحكمة" || label === "تفويض القيادة" || label === "مؤشرات القيادة") return "gold";
+  return "olive";
+}
+
+export function isNavigationPathActive(location: string, path: string) {
+  const current = location.split("?")[0] || "/";
+  const target = path.split("?")[0] || "/";
+  if (target === "/") return current === "/";
+  return current === target || current.startsWith(`${target}/`);
+}
+
+export function navigationIconWellClass(tone: NavigationIconTone, active: boolean, variant: "light" | "dark") {
+  if (tone === "alert") {
+    return variant === "dark"
+      ? (active ? "bg-[#5a2b25] text-[#f3c5bb]" : "bg-[#3a221f] text-[#e0a89c] group-hover:bg-[#5a2b25] group-hover:text-[#f3c5bb]")
+      : (active ? "bg-[#f3d4cc] text-[#a8493b]" : "bg-[#f8e6e1] text-[#a64b3c] group-hover:bg-[#f3d4cc]");
+  }
+  if (tone === "gold") {
+    return variant === "dark"
+      ? (active ? "bg-[#4a3d1f] text-[#ead69c]" : "bg-[#2f2a18] text-[#d4c08a] group-hover:bg-[#4a3d1f] group-hover:text-[#ead69c]")
+      : (active ? "bg-[#efe4c0] text-[#80642b]" : "bg-[#f6f0df] text-[#8a6e32] group-hover:bg-[#efe4c0]");
+  }
+  return variant === "dark"
+    ? (active ? "bg-[#255a43] text-[#dbead2]" : "bg-[#183d2f] text-[#9dc298] group-hover:bg-[#25513f] group-hover:text-[#dbead2]")
+    : (active ? "bg-[#d1e4d1] text-[#245f43]" : "bg-[#eef3eb] text-[#668c6f] group-hover:bg-[#deebdc] group-hover:text-[#245f43]");
+}
+
+export function navigationIconForPath(path: string) {
+  const target = path.split("?")[0] || "/";
+  for (const section of navigationSections) {
+    const item = section.items.find(candidate => isNavigationPathActive(target, candidate.path) || candidate.path.split("?")[0] === target);
+    if (item) return { icon: item.icon, tone: navigationIconTone(section.heading, item.label), label: item.label };
+  }
+  return null;
+}
 
 export const oliveIconMotionClass = "rakiza-olive-icon";
 
@@ -137,7 +179,7 @@ function CourtMark() {
   return (
     <div className="flex items-center gap-3">
       <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#2d6b4f] text-[#f5f7ef] shadow-[0_8px_18px_rgba(41,91,66,0.16)]">
-        <Scale className={`h-5 w-5 ${oliveIconMotionClass}`} aria-hidden="true" />
+        <CourtEmblem className={`h-6 w-6 ${oliveIconMotionClass}`} />
       </div>
       <div className="min-w-0">
         <p className="text-2xl font-black tracking-tight text-[#245f43] sm:text-3xl">{RAKIZA_BRAND_LINE}</p>
@@ -174,11 +216,13 @@ function NavigationMenu({ onNavigate, permission, isOwner, unitName, unitCode, v
           </button>
           {isOpen && <div className="space-y-1">
             {visibleItems.map(item => {
-              const active = location === item.path;
+              const active = isNavigationPathActive(location, item.path);
+              const tone = navigationIconTone(section.heading, item.label);
               const { count: unreadCount, accessibleLabel: unreadLabel } = navigationBadgeForItem(item.label, { mail: mailUnreadCount, chat: chatUnreadCount, taskAttention: taskAttentionCount, pendingApprovals: pendingApprovalCount });
+              const iconSize = item.label === "بريد ركيزة" ? "h-5 w-5" : "h-[1.15rem] w-[1.15rem]";
               return (
                 <button key={`${item.path}-${item.label}`} type="button" onClick={() => { setLocation(item.path); onNavigate?.(); }} className={["group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-right text-sm font-semibold transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]", variant === "dark" ? (active ? "border-r-2 border-[#a8c98f] bg-[#1f6147] text-white shadow-[0_6px_16px_rgba(20,69,48,0.2)" : "text-white/85 hover:bg-[#214c3d] hover:text-white") : (active ? "border-r-2 border-[#7faa82] bg-[#e0ecdf] text-[#245f43] shadow-[0_5px_14px_rgba(50,94,68,0.09)]" : "text-[#4f6258] hover:bg-[#e9eee7] hover:text-[#245f43]")].join(" ")}>
-                  <span aria-hidden="true" className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${variant === "dark" ? (active ? "bg-[#255a43]" : "bg-[#183d2f] group-hover:bg-[#25513f]") : (active ? "bg-[#d1e4d1]" : "bg-[#eef3eb] group-hover:bg-[#deebdc]")}`}><item.icon className={`h-[1.15rem] w-[1.15rem] ${oliveIconMotionClass} ${variant === "dark" ? (active ? "text-[#dbead2]" : "text-[#9dc298] group-hover:text-[#dbead2]") : (active ? "text-[#245f43]" : "text-[#668c6f] group-hover:text-[#245f43]")}`} /></span>
+                  <span aria-hidden="true" className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${navigationIconWellClass(tone, active, variant)}`}><item.icon className={`${iconSize} ${oliveIconMotionClass}`} fill={active ? "currentColor" : "none"} strokeWidth={active ? 1.6 : 2} /></span>
                   <span>{item.label}</span>
                   {unreadCount > 0 && <span aria-label={unreadLabel} className={`mr-auto min-w-5 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${variant === "dark" ? "bg-[#b6d3aa] text-[#173c2d]" : "bg-[#b84d3e] text-white"}`}>{unreadCount > 99 ? "99+" : unreadCount}</span>}
                 </button>
@@ -296,7 +340,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
       <div dir="rtl" className="rakiza-theme-root grid min-h-screen place-items-center bg-[var(--rakiza-canvas)] p-5" style={{ fontFamily: "Tajawal, sans-serif" }}>
         <section className="w-full max-w-md rounded-[2rem] border border-[#e8e1d2] bg-white p-8 text-center shadow-[0_24px_70px_rgba(34,54,46,0.12)]">
           <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-2xl bg-[#12352f] text-[#f1d794]">
-            <ShieldCheck className="h-8 w-8" aria-hidden="true" />
+            <CourtEmblem className="h-9 w-9" />
           </div>
           <h1 className="text-2xl font-bold text-[#12352f]">بوابة {RAKIZA_BRAND} الداخلية</h1>
           <p className="mt-3 text-sm leading-7 text-[#66756d]">يدخل الموظف المعتمد برمز تحقق إلى البريد الرسمي، ويمكن للموظف الجديد إرسال طلب تسجيل دون إنشاء حساب Manus.</p>
@@ -329,7 +373,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
                 <Menu className={`h-5 w-5 ${oliveIconMotionClass}`} aria-hidden="true" />
               </button>
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#2d6b4f] text-[#f5f7ef] shadow-[0_7px_16px_rgba(45,107,79,0.16)]" aria-label="شعار رَكيزة">
-                <Scale className={`h-5 w-5 ${oliveIconMotionClass}`} aria-hidden="true" />
+                <CourtEmblem className={`h-6 w-6 ${oliveIconMotionClass}`} />
               </div>
               <div className="min-w-0 leading-tight">
                 <p className="truncate text-sm font-black text-[#244637]">رَكيزة <span className="font-semibold text-[#527064]">· {currentProfile.data?.unitName || "المحكمة العمالية بالرياض"}</span></p>
@@ -345,6 +389,10 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
               <GlobalSearchBar />
               <WorkModeToggle hasLeadershipScope={hasLeadershipScope} />
               {toggleTheme && <button type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "التبديل إلى النمط الفاتح" : "التبديل إلى النمط الداكن"} title={theme === "dark" ? "النمط الفاتح" : "النمط الداكن"} aria-pressed={theme === "dark"} data-testid="theme-toggle" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] text-[#2d6b4f] transition-colors hover:bg-[#e0ecdf] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">{theme === "dark" ? <Sun className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" /> : <Moon className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />}</button>}
+              <button type="button" aria-label="بريد ركيزة" title="بريد ركيزة" onClick={() => setLocation("/rakiza-mail")} className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#cfd7ca] bg-[#e7f0e6] text-[#245f43] transition hover:bg-[#d7e8d6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
+                <Mail className={`h-6 w-6 ${oliveIconMotionClass}`} aria-hidden="true" />
+                {Number(internalMailCounts.data?.unread || 0) > 0 && <span aria-label={`${internalMailCounts.data?.unread} رسالة غير مقروءة`} className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#2d6b4f] px-1 text-[9px] font-bold text-white">{Number(internalMailCounts.data?.unread) > 9 ? "9+" : internalMailCounts.data?.unread}</span>}
+              </button>
               <button type="button" aria-label="الإشعارات" onClick={() => setNotificationsOpen(!notificationsOpen)} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#486455] transition hover:bg-[#e1ebe0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
                 <BellRing className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />
                 {unreadNotifications.length > 0 && <span aria-label={`${unreadNotifications.length} إشعار غير مقروء`} className="absolute left-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#c83b3b] px-1 text-[9px] font-bold text-white">{unreadNotifications.length > 9 ? "9+" : unreadNotifications.length}</span>}
@@ -381,7 +429,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
         <aside dir="rtl" className="rakiza-sidebar hidden w-[15.5rem] shrink-0 bg-sidebar px-4 py-6 text-sidebar-foreground shadow-[-8px_0_22px_rgba(18,53,47,0.12)] lg:block">
           <div className="sticky top-5 flex min-h-[calc(100vh-2.5rem)] flex-col">
             <div className="border-b border-white/10 pb-6 text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#eff4ec] text-[#2d6b4f] shadow-[0_10px_30px_rgba(0,0,0,0.16)]"><UsersRound className={`h-8 w-8 ${oliveIconMotionClass}`} aria-hidden="true" /></div>
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#eff4ec] text-[#2d6b4f] shadow-[0_10px_30px_rgba(0,0,0,0.16)]"><CourtEmblem className={`h-9 w-9 ${oliveIconMotionClass}`} /></div>
               <p className="mt-3 text-xl font-black">لوحة القيادة</p>
               <p className="mt-1 text-sm text-white/70">{currentProfile.data?.unitName || "وحدة شؤون الملازمين"}</p>
             </div>

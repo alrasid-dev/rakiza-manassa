@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNavigationSectionAllowed, navigationBadgeForItem, navigationSections, oliveIconMotionClass, resolveNavigationPermission } from "./DashboardLayout";
+import { isNavigationPathActive, isNavigationSectionAllowed, navigationBadgeForItem, navigationIconTone, navigationSections, oliveIconMotionClass, resolveNavigationPermission } from "./DashboardLayout";
 
 describe("navigation sections", () => {
   it("يستخدم فئة حركة مقيدة للأيقونات الزيتية دون تغيير تعريفات التنقل", () => {
@@ -52,5 +52,13 @@ describe("navigation sections", () => {
     expect(items.find(item => item.label === "إعدادات الموظف")?.icon).not.toBe(items.find(item => item.label === "إعدادات المنصة")?.icon);
     expect(items.find(item => item.label === "تفويض")?.icon).not.toBe(items.find(item => item.label === "طلبات التسجيل وإدارة المستخدمين")?.icon);
     expect(items.find(item => item.label === "مؤشرات القيادة")?.icon).not.toBe(items.find(item => item.label === "شؤون القضاة")?.icon);
+  });
+
+  it("يلوّن آبار الأيقونات حسب العمل والرئاسة والتنبيه ويملأ الصفحة النشطة", () => {
+    expect(navigationIconTone("لوحة القيادة", "مهامي")).toBe("olive");
+    expect(navigationIconTone("رئاسة المحكمة", "تفويض")).toBe("gold");
+    expect(navigationIconTone("لوحة القيادة", "المتعثرات")).toBe("alert");
+    expect(isNavigationPathActive("/rakiza-mail?focus=inbox", "/rakiza-mail?focus=search")).toBe(true);
+    expect(isNavigationPathActive("/tasks", "/")).toBe(false);
   });
 });
