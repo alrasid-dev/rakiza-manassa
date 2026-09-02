@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Redirect, Route, Switch } from "wouter";
+import { Redirect, Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -45,11 +45,16 @@ import NotificationsPage from "./pages/NotificationsPage";
 import LeadershipWorkloadPage from "./pages/LeadershipWorkloadPage";
 import PerformanceReportEvaluationsPage from "./pages/PerformanceReportEvaluationsPage";
 import CorrespondenceWorkspaceContent from "./pages/CorrespondenceWorkspaceContent";
+import InstallAppsPage from "./pages/InstallAppsPage";
+
+const routerBase = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 
 
 function Router() {
   return (
+    <WouterRouter base={routerBase || undefined}>
     <Switch>
+      <Route path="/apps" component={InstallAppsPage} />
       <Route path="/login" component={AuthExperimentPage} />
       <Route path="/recover" component={PasswordRecoveryPage} />
       <Route path="/approvals" component={IS_PREVIEW_MODE ? () => <PreviewWorkspace workspace="archive" /> : ApprovalsPage} />
@@ -105,6 +110,7 @@ function Router() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </WouterRouter>
   );
 }
 

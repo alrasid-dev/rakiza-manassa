@@ -1,0 +1,84 @@
+name: بناء تطبيق أندرويد المجاني
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "client/public/manifest.webmanifest"
+      - "client/public/sw.js"
+      - "client/index.html"
+      - ".github/workflows/build_android_apk.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+
+      - name: تثبيت Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: تثبيت Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: تثبيت أدوات Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: تثبيت غلاف Capacitor
+        working-directory: mobile
+        run: npm install
+
+      - name: إنشاء مشروع أندرويد إن لم يكن موجوداً
+        working-directory: mobile
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: مزامنة الواجهة مع أندرويد
+        working-directory: mobile
+        run: npx cap sync android
+
+      - name: بناء ملف APK للتنزيل المباشر
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: تجهيز ملف التنزيل
+        id: apk
+        run: |
+          APK_PATH=$(find mobile/android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          cp "$APK_PATH" rakiza-manassa.apk
+          echo "path=rakiza-manassa.apk" >> "$GITHUB_OUTPUT"
+
+      - name: رفع الملف كمخرج
+        uses: actions/upload-artifact@v4
+        with:
+          name: rakiza-manassa-android
+          path: rakiza-manassa.apk
+          retention-days: 90
+
+      - name: نشر رابط تنزيل مجاني دائم
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: "رَكيزة — تطبيق أندرويد (آخر بناء)"
+          body: |
+            تنزيل مباشر ومجاني لتطبيق رَكيزة على أندرويد.
+            ثبّت الملف على الجهاز، واسمح بالمصادر غير المعروفة لهذا الملف فقط.
+            لتثبيت صفحة الويب كتطبيق على أي نظام: افتح المنصة ثم «تثبيت رَكيزة».
+          files: rakiza-manassa.apk
+          prerelease: true
+          make_latest: false

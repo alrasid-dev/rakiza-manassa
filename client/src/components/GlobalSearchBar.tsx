@@ -22,11 +22,11 @@ export default function GlobalSearchBar() {
   }, []);
   return (
     <div className="relative">
-      <button type="button" aria-label="بحث شامل" onClick={() => setOpen(true)} className="grid h-9 w-9 place-items-center rounded-lg text-[#486455] hover:bg-[#e1ebe0]">
+      <button type="button" aria-label="بحث شامل" onClick={() => setOpen(true)} className="grid h-11 w-11 place-items-center rounded-lg text-[#486455] hover:bg-[#e1ebe0]">
         <Search className="h-4 w-4" />
       </button>
       {open && (
-        <div className="absolute left-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-[#cbd6ca] bg-[#f8f8f3] p-3 shadow-[0_18px_40px_rgba(36,67,51,0.16)]" dir="rtl">
+        <div className="fixed inset-x-3 top-[4.5rem] z-50 w-auto rounded-2xl border border-[#cbd6ca] bg-[#f8f8f3] p-3 shadow-[0_18px_40px_rgba(36,67,51,0.16)] sm:absolute sm:inset-x-auto sm:left-0 sm:top-12 sm:w-[min(22rem,calc(100vw-2rem))]" dir="rtl">
           <input autoFocus value={query} onChange={event => setQuery(event.target.value)} placeholder="ابحث في المهام والبريد والتقارير والموظفين…" className="h-10 w-full rounded-xl border border-[#d5e0d4] bg-white px-3 text-sm" />
           <div className="mt-2 max-h-72 overflow-y-auto">
             {results.isFetching ? <p className="p-3 text-xs text-[#718078]">جارٍ البحث…</p> : results.data?.length ? results.data.map(item => (

@@ -15,13 +15,24 @@ pnpm dev
 رَكيزة مشروع مستقل عن AZ Alpha Vision. نفس فكرة الربط (غيث هاب + Vercel) لكن حساباً ومستودعاً ورابطاً خاصاً بها.
 
 - مستودع رَكيزة: https://github.com/alrasid-dev/rakiza-manassa
-- رابط رَكيزة الحي: https://alrasid-dev.github.io/rakiza-manassa/
+- رابط رَكيزة النظيف: https://alrasid-dev.github.io/rakiza-manassa/
 - مستودع المشروع الأول: https://github.com/alrasid-dev/AZ_Alpha-Vision
 - رابط المشروع الأول: https://azalphavision.vercel.app
 
 عند الاستيراد في Vercel اختاري «Create New Project» باسم `rakiza-manassa`، ولا تضيفيه داخل مشروع AZ Alpha Vision.
 
 البناء المحلي: `pnpm build` ثم `pnpm start`. مسار الصحة: `/health`.
+
+## تثبيت المنصة كتطبيق (مجاناً)
+
+صفحة الويب نفسها تطبيق قابل للتثبيت على ويندوز وماك ولينكس وأندرويد وآيفون:
+
+1. افتح [صفحة التثبيت](https://alrasid-dev.github.io/rakiza-manassa/apps).
+2. أندرويد: ثبّت من كروم، أو حمّل [ملف APK المجاني](https://github.com/alrasid-dev/rakiza-manassa/releases/download/android-latest/rakiza-manassa.apk).
+3. آيفون وآيباد: من سفاري اضغط المشاركة ثم «إضافة إلى الشاشة الرئيسية».
+4. اللابتوب: من كروم أو إيدج اختر «تثبيت رَكيزة».
+
+مشروع iOS الجاهز للفتح في Xcode يُبنى تلقائياً عند الدفع إلى `main` (لنشره على آب ستور يلزم حساب مطوّر آبل لاحقاً). تطبيق آيفون المجاني الفوري هو تثبيت صفحة الويب.
 
 ## الاستخدام
 

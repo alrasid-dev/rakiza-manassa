@@ -1,6 +1,9 @@
 # Dependencies
 **/node_modules
 .pnpm-store/
+mobile/android/
+mobile/ios/
+mobile/node_modules/
 
 # Build outputs
 dist/
@@ -116,3 +119,8 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+.vercel
+
+_vercel_site/
+_vercel_static/

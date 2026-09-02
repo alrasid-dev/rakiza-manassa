@@ -1,9 +1,10 @@
+import { platformHref } from "@/lib/pwa";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
 
 export function getUnauthenticatedRedirectPath(redirectPath?: string) {
-  return redirectPath ?? "/login";
+  return redirectPath ?? platformHref("login");
 }
 
 type UseAuthOptions = {

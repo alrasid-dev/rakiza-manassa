@@ -5,7 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { registerPlatformServiceWorker } from "./lib/pwa";
+import { platformHref, registerPlatformServiceWorker } from "./lib/pwa";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -18,7 +18,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  if (window.location.pathname !== "/login") window.location.href = "/login";
+  const loginPath = platformHref("login");
+  if (window.location.pathname !== loginPath.replace(/\/$/, "")) window.location.href = loginPath;
 };
 
 queryClient.getQueryCache().subscribe(event => {

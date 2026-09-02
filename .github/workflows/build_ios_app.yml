@@ -1,0 +1,43 @@
+name: تجهيز مشروع iOS للنشر
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/build_ios_app.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: macos-latest
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+
+      - name: تثبيت Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: تثبيت غلاف Capacitor
+        working-directory: mobile
+        run: npm install
+
+      - name: إنشاء مشروع Xcode
+        working-directory: mobile
+        run: |
+          if [ ! -d ios ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+
+      - name: رفع مشروع iOS الجاهز للفتح في Xcode
+        uses: actions/upload-artifact@v4
+        with:
+          name: rakiza-manassa-ios
+          path: mobile/ios
+          retention-days: 90

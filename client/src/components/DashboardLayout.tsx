@@ -362,13 +362,13 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
     <div dir="rtl" className="rakiza-theme-root min-h-screen overflow-x-hidden bg-[var(--rakiza-canvas)] text-[var(--rakiza-ink)]" style={{ fontFamily: "Tajawal, sans-serif" }}>
       <div dir="ltr" className="mx-auto min-h-screen w-full max-w-[1800px] overflow-x-hidden lg:flex">
         <main dir="rtl" className="w-full min-w-0 px-4 pb-8 pt-4 sm:px-7 sm:pt-6 lg:flex-1 lg:px-8 lg:pt-5">
-          <header className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rakiza-border)] bg-[var(--rakiza-surface)] px-4 py-3 shadow-[0_4px_16px_rgba(35,63,50,0.04)] sm:px-5 lg:mb-6 lg:min-h-[5.6rem] lg:flex-nowrap">
+          <header className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--rakiza-border)] bg-[var(--rakiza-surface)] px-3 py-3 shadow-[0_4px_16px_rgba(35,63,50,0.04)] sm:mb-7 sm:gap-3 sm:px-5 lg:mb-6 lg:min-h-[5.6rem] lg:flex-nowrap">
             <div dir="rtl" className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 aria-label="فتح القائمة"
                 onClick={() => setMobileOpen(true)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[#cfd7ca] bg-[#f2f3ed] text-[#245f43] lg:hidden"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#cfd7ca] bg-[#f2f3ed] text-[#245f43] lg:hidden"
               >
                 <Menu className={`h-5 w-5 ${oliveIconMotionClass}`} aria-hidden="true" />
               </button>
@@ -382,18 +382,18 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
             </div>
             <button type="button" onClick={() => setLocation("/announcements")} className="order-3 flex w-full min-w-0 items-center gap-3 rounded-xl border border-[#d2d9cf] bg-[#f1f2ec] px-3 py-2.5 text-right transition hover:bg-[#e5ece2] md:order-none md:flex-1 lg:max-w-[34rem]" aria-label="لوحة التعاميم والإعلانات">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#dce9da] text-[#2d6b4f]"><Megaphone className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="text-[11px] font-black text-[#315348]">لوحة التعاميم والإعلانات</span>{announcementCopy.isNew ? <span className="rounded-full bg-[#e0eadf] px-1.5 py-0.5 text-[9px] font-black text-[#2d6b4f]">جديد</span> : null}</span><span className="mt-1 block truncate text-xs font-bold text-[#365548]">{announcementCopy.title}</span><span className="mt-0.5 block truncate text-[10px] text-[#748078]">{announcementCopy.summary}</span></span>
+              <span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="text-[11px] font-black text-[#315348]">لوحة التعاميم والإعلانات</span>{announcementCopy.isNew ? <span className="rounded-full bg-[#e0eadf] px-1.5 py-0.5 text-[9px] font-black text-[#2d6b4f]">جديد</span> : null}</span><span className="mt-1 block truncate text-xs font-bold text-[#365548]">{announcementCopy.title}</span><span className="mt-0.5 hidden truncate text-[10px] text-[#748078] sm:block">{announcementCopy.summary}</span></span>
               <ArrowLeft className="h-4 w-4 shrink-0 text-[#698075]" aria-hidden="true" />
             </button>
-            <div dir="ltr" className="relative flex min-w-0 items-center gap-2 sm:gap-3">
+            <div dir="ltr" className="rakiza-toolbar relative flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:gap-3">
               <GlobalSearchBar />
               <WorkModeToggle hasLeadershipScope={hasLeadershipScope} />
-              {toggleTheme && <button type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "التبديل إلى النمط الفاتح" : "التبديل إلى النمط الداكن"} title={theme === "dark" ? "النمط الفاتح" : "النمط الداكن"} aria-pressed={theme === "dark"} data-testid="theme-toggle" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] text-[#2d6b4f] transition-colors hover:bg-[#e0ecdf] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">{theme === "dark" ? <Sun className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" /> : <Moon className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />}</button>}
+              {toggleTheme && <button type="button" onClick={toggleTheme} aria-label={theme === "dark" ? "التبديل إلى النمط الفاتح" : "التبديل إلى النمط الداكن"} title={theme === "dark" ? "النمط الفاتح" : "النمط الداكن"} aria-pressed={theme === "dark"} data-testid="theme-toggle" className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] text-[#2d6b4f] transition-colors hover:bg-[#e0ecdf] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">{theme === "dark" ? <Sun className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" /> : <Moon className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />}</button>}
               <button type="button" aria-label="بريد ركيزة" title="بريد ركيزة" onClick={() => setLocation("/rakiza-mail")} className="relative grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-[#cfd7ca] bg-[#e7f0e6] text-[#245f43] transition hover:bg-[#d7e8d6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
                 <Mail className={`h-6 w-6 ${oliveIconMotionClass}`} aria-hidden="true" />
                 {Number(internalMailCounts.data?.unread || 0) > 0 && <span aria-label={`${internalMailCounts.data?.unread} رسالة غير مقروءة`} className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#2d6b4f] px-1 text-[9px] font-bold text-white">{Number(internalMailCounts.data?.unread) > 9 ? "9+" : internalMailCounts.data?.unread}</span>}
               </button>
-              <button type="button" aria-label="الإشعارات" onClick={() => setNotificationsOpen(!notificationsOpen)} className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[#486455] transition hover:bg-[#e1ebe0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
+              <button type="button" aria-label="الإشعارات" onClick={() => setNotificationsOpen(!notificationsOpen)} className="relative grid h-11 w-11 shrink-0 place-items-center rounded-lg text-[#486455] transition hover:bg-[#e1ebe0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886]">
                 <BellRing className={`h-4 w-4 ${oliveIconMotionClass}`} aria-hidden="true" />
                 {unreadNotifications.length > 0 && <span aria-label={`${unreadNotifications.length} إشعار غير مقروء`} className="absolute left-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#c83b3b] px-1 text-[9px] font-bold text-white">{unreadNotifications.length > 9 ? "9+" : unreadNotifications.length}</span>}
                 {unreadRecommendations.length > 0 && <span aria-label={`${unreadRecommendations.length} توصية جديدة`} className="absolute -left-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-white bg-[#b51f2b] px-1 text-[9px] font-bold text-white">{unreadRecommendations.length > 9 ? "9+" : unreadRecommendations.length}</span>}
@@ -404,7 +404,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
                 <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#dce9da] text-[#2d6b4f]" aria-label="صورة المستخدم">
                   <UserCheck className={`h-5 w-5 ${oliveIconMotionClass}`} aria-hidden="true" />
                 </div>
-                <div dir="rtl" className="hidden min-w-0 text-right sm:block">
+                <div dir="rtl" className="hidden min-w-0 text-right md:block">
                   <p className="max-w-44 truncate text-xs font-bold text-[#284239]">{user?.name || "وضع المعاينة"}</p>
                   {(departmentIdentity.data?.activeAccountId || currentProfile.data?.unitName) && <p className="mt-0.5 max-w-44 truncate text-[10px] font-semibold text-[#2d6b4f]">{departmentIdentity.data?.activeAccountId ? "هوية قسم مفوضة" : currentProfile.data?.unitName}</p>}
                   <p className="mt-0.5 max-w-44 truncate text-[11px] text-[#77867d]">{user?.email || "بيانات مصدر مستوردة · معاينة"}</p>
@@ -418,7 +418,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
               </div>
             </div>
           </header>
-          {!hideUtilityPrompts && <PwaInstallHint />}
+          {!hideUtilityPrompts && <PwaInstallHint alwaysVisible />}
           {!IS_PREVIEW_MODE && user && <PasskeyEnrollmentGate officialEmail={user.email} />}
           {!IS_PREVIEW_MODE && user && <AttendanceFirstGate onComplete={() => window.setTimeout(() => undefined, 0)} onBlockingChange={({ isBlocking }) => setAttendanceGateBlocking(isBlocking)} />}
           {!IS_PREVIEW_MODE && user && <AiRakizaTaskPrompt tasks={assignedTasks.data || []} unreadMailCount={internalMailCounts.data?.unread || 0} urgentUnreadMailCount={internalMailCounts.data?.urgentUnread || 0} unreadNotificationCount={unreadNotifications.length} suppressAutoPrompt={attendanceGateBlocking} onStart={task => setLocation(`/tasks?task=${task.id}`)} onOpenAssistant={() => setLocation("/assistants")} onOpenMail={() => setLocation("/rakiza-mail")} onOpenNotifications={() => setLocation("/notifications")} />}
@@ -448,7 +448,7 @@ export default function DashboardLayout({ children, hideUtilityPrompts = false, 
       {mobileOpen && (
         <div className="fixed inset-0 z-50">
           <button type="button" aria-label="إغلاق القائمة" onClick={() => setMobileOpen(false)} className="absolute inset-0 bg-[#10271f]/35 backdrop-blur-sm" />
-          <aside className="absolute right-0 top-0 h-full w-[19rem] max-w-[86vw] overflow-y-auto bg-[var(--rakiza-surface)] p-5 shadow-[-20px_0_55px_rgba(18,53,47,0.18)]">
+          <aside className="absolute right-0 top-0 h-full w-[min(22rem,92vw)] overflow-y-auto bg-[var(--rakiza-surface)] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))] shadow-[-20px_0_55px_rgba(18,53,47,0.18)]">
             <div className="flex items-center justify-between">
               <CourtMark />
               <button type="button" aria-label="إغلاق القائمة" onClick={() => setMobileOpen(false)} className="grid h-9 w-9 place-items-center rounded-xl text-[#486455] hover:bg-[#dce9da]"><X className="h-5 w-5" /></button>

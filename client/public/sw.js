@@ -1,4 +1,12 @@
 // عامل خدمة خفيف: لا يخزن بيانات تشغيلية، ويعالج إشعارات Web Push فقط.
+function scopedAsset(path) {
+  try {
+    return new URL(String(path).replace(/^\//, ""), self.registration.scope).href;
+  } catch {
+    return path;
+  }
+}
+
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", event => event.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", event => {
@@ -18,8 +26,8 @@ self.addEventListener("push", event => {
     tag: data.tag,
     dir: "rtl",
     lang: "ar",
-    icon: "/manus-storage/court-pwa-icon-192_99f46e8c.png",
-    badge: "/manus-storage/court-pwa-icon-192_99f46e8c.png",
+    icon: scopedAsset("icons/pwa-192.png"),
+    badge: scopedAsset("icons/pwa-192.png"),
     actions: Array.isArray(data.actions) && data.actions.length ? data.actions.slice(0, 2) : [
       { action: "open-tasks", title: "عرض المهام" },
       { action: "open-notifications", title: "مركز التنبيهات" },
@@ -34,7 +42,7 @@ self.addEventListener("push", event => {
 self.addEventListener("notificationclick", event => {
   event.notification.close();
   const actionUrl = event.action === "open-tasks" ? "/tasks" : event.action === "open-notifications" ? "/email-settings" : event.notification.data?.url || "/";
-  const targetUrl = new URL(actionUrl, self.location.origin).href;
+  const targetUrl = new URL(actionUrl.replace(/^\//, ""), self.registration.scope).href;
   event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(clients => {
     const existing = clients.find(client => "focus" in client);
     if (existing) {

@@ -14,4 +14,9 @@ describe("إرشاد تثبيت التطبيق", () => {
     fireEvent.click(button);
     expect(prompt).toHaveBeenCalledOnce();
   });
+
+  it("يعرض تعليمات التثبيت حتى لو لم يطلق المتصفح حدث التثبيت", () => {
+    render(<PwaInstallHint alwaysVisible />);
+    expect(screen.getByRole("link", { name: "كل الأجهزة" })).toHaveAttribute("href", expect.stringMatching(/apps$/));
+  });
 });

@@ -1,0 +1,21 @@
+{
+  "appId": "sa.moj.rakiza.manassa",
+  "appName": "ركيزة",
+  "webDir": "www",
+  "server": {
+    "url": "https://alrasid-dev.github.io/rakiza-manassa/",
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "backgroundColor": "#12352f",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#12352f"
+    }
+  }
+}

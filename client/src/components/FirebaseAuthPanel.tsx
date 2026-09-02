@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Chrome, KeyRound, MailCheck } from "lucide-react";
 import { GoogleAuthProvider, createUserWithEmailAndPassword, getRedirectResult, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
+import { platformBasePath } from "@/lib/pwa";
 import { trpc } from "@/lib/trpc";
 import { firebaseWebConfigReady, getFirebaseAuth } from "@/lib/firebase";
 import { Button } from "./ui/button";
@@ -27,7 +28,7 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
   const bridgeSession = async (user: { getIdToken: () => Promise<string> }) => {
     const idToken = await user.getIdToken();
     await exchange.mutateAsync({ idToken, ...(activationToken ? { activationToken } : {}) });
-    window.location.assign("/");
+    window.location.assign(platformBasePath());
   };
 
   useEffect(() => {

@@ -11,9 +11,9 @@ export default function WorkModeToggle({ hasLeadershipScope }: { hasLeadershipSc
   if (!hasLeadershipScope) return null;
   const isManager = mode !== "employee";
   return (
-    <button type="button" aria-label={isManager ? "التبديل إلى وضع الموظف" : "التبديل إلى وضع المدير"} onClick={() => update.mutate({ workMode: isManager ? "employee" : "manager" })} className="hidden items-center gap-1 rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] px-2 py-1.5 text-[10px] font-black text-[#2d6b4f] sm:inline-flex">
-      {isManager ? <Briefcase className="h-3.5 w-3.5" /> : <UserRound className="h-3.5 w-3.5" />}
-      {update.isPending ? "…" : isManager ? "وضع المدير" : "وضع الموظف"}
+    <button type="button" aria-label={isManager ? "التبديل إلى وضع الموظف" : "التبديل إلى وضع المدير"} onClick={() => update.mutate({ workMode: isManager ? "employee" : "manager" })} className="inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-lg border border-[#cfd7ca] bg-[#f1f3ed] px-2 text-[10px] font-black text-[#2d6b4f] sm:h-auto sm:px-2.5 sm:py-1.5">
+      {isManager ? <Briefcase className="h-4 w-4" /> : <UserRound className="h-4 w-4" />}
+      <span className="sr-only sm:not-sr-only">{update.isPending ? "…" : isManager ? "وضع المدير" : "وضع الموظف"}</span>
     </button>
   );
 }

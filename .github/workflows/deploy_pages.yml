@@ -38,6 +38,7 @@ jobs:
           pnpm exec vite build
           mkdir -p _site
           cp -R dist/public/. _site/
+          cp _site/index.html _site/404.html
       - name: تهيئة GitHub Pages
         uses: actions/configure-pages@v5
       - name: تحميل ملفات الموقع
