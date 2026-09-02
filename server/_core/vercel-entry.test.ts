@@ -8,6 +8,9 @@ describe("مسار تشغيل Vercel", () => {
     const serverEntry = readFileSync(join(process.cwd(), "server.ts"), "utf8");
     const appEntry = readFileSync(join(process.cwd(), "server/_core/app.ts"), "utf8");
     const staticEntry = readFileSync(join(process.cwd(), "server/_core/static.ts"), "utf8");
+    expect(apiEntry).not.toMatch(/from ["']\.\.\/server["']/);
+    expect(appEntry).not.toMatch(/from ["']\.\.\/routers["']/);
+    expect(appEntry).toMatch(/from ["']\.\.\/routers\/index["']/);
     for (const source of [apiEntry, serverEntry, appEntry, staticEntry]) {
       expect(source).not.toMatch(/from ["']vite["']/);
       expect(source).not.toMatch(/vite\.config/);

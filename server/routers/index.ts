@@ -1,8 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
-import { courtRouter } from "./routers/court";
+import { getSessionCookieOptions } from "../_core/cookies";
+import { systemRouter } from "../_core/systemRouter";
+import { publicProcedure, router } from "../_core/trpc";
+import { courtRouter } from "./court";
 
 export const appRouter = router({
   system: systemRouter,

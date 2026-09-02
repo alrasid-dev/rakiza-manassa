@@ -3,7 +3,7 @@ import express from "express";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
-import { appRouter } from "../routers";
+import { appRouter } from "../routers/index";
 import { createContext } from "./context";
 import { handleTraineeDueSoonSchedule } from "../scheduled/trainee-due-soon";
 import { handleDailyTaskReminderSchedule, handleLeaveStatusRefreshSchedule, handleSupportTicketEscalationSchedule, handleTaskEscalationSchedule, handleTraineeExcelSyncSchedule } from "../scheduled/task-automation";
