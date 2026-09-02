@@ -4,9 +4,9 @@
   "installCommand": "npx --yes pnpm@10.4.1 install --frozen-lockfile --prod=false",
   "buildCommand": "npx --yes pnpm@10.4.1 run vercel-build",
   "functions": {
-    "api/index.ts": {
+    "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "{public/**,api/handler.js}"
+      "includeFiles": "public/**"
     }
   },
   "rewrites": [

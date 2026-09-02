@@ -2,7 +2,7 @@ import * as esbuild from "esbuild";
 import fs from "node:fs";
 import path from "node:path";
 
-const outfile = "api/handler.js";
+const outfile = "api/index.js";
 
 await esbuild.build({
   entryPoints: ["api/handler.ts"],
@@ -16,8 +16,14 @@ await esbuild.build({
 });
 
 const bundled = fs.readFileSync(outfile, "utf8");
-if (/from\s+["']\.\.\/server["']/.test(bundled) || /from\s+["']\.\/server["']/.test(bundled)) {
-  console.error("Vercel bundle still contains a directory import of server/");
+const banned = [
+  /from\s+["']\.\.\/server["']/,
+  /from\s+["']\.\/server["']/,
+  /from\s+["'][^"']*\/server\/_core\/app["']/,
+  /from\s+["'][^"']*\/server\/_core\/static["']/,
+];
+if (banned.some(pattern => pattern.test(bundled))) {
+  console.error("Vercel bundle still contains unresolved server/ ESM imports");
   process.exit(1);
 }
 
