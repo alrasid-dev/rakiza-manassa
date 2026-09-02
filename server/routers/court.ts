@@ -246,15 +246,7 @@ async function requirePlatformOwner(user: { id: number; role: "user" | "admin"; 
 async function permissionForUser(user: { id: number; role: "user" | "admin"; email: string | null }): Promise<AppPermission> {
   if (user.role === "admin") return "full_control";
   if (user.email?.trim().toLowerCase() === ENV.platformOwnerEmail) return "full_control";
-  const permission = await getAccessPermission(user.email);
-  if (permission) return permission;
-  const db = await getDb();
-  const normalizedEmail = user.email?.trim().toLowerCase();
-  if (db && normalizedEmail) {
-    const department = (await db.select({ id: departmentAccounts.id }).from(departmentAccounts).where(and(sql`LOWER(${departmentAccounts.loginEmail}) = ${normalizedEmail}`, eq(departmentAccounts.isActive, true))).limit(1))[0];
-    if (department) return "general_view";
-  }
-  return null;
+  return getAccessPermission(user.email);
 }
 
 async function requirePermission(user: { id: number; role: "user" | "admin"; email: string | null }, action: ProtectedAction) {

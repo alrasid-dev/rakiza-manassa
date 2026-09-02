@@ -1,7 +1,8 @@
 import { createHash } from "crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { decodeProtectedHeader, importPKCS8, importX509, jwtVerify, SignJWT } from "jose";
-import { accessGrants, departmentAccounts, personProfiles, users } from "../drizzle/schema";
+import { accessGrants, personProfiles, users } from "../drizzle/schema";
+import { findDepartmentAccountByLoginEmail } from "./court-service";
 import { getDb } from "./db";
 
 type FirebaseServiceAccount = {
@@ -118,8 +119,8 @@ export async function linkFirebaseIdentity(identity: FirebaseIdentity) {
   if (existingByUid && existingByEmail && existingByUid.id !== existingByEmail.id) throw new Error("هذا البريد مرتبط بحساب رَكيزة آخر.");
   let user = existingByUid ?? existingByEmail;
   if (!user) {
-    const [departmentAccount] = await db.select().from(departmentAccounts).where(and(sql`LOWER(${departmentAccounts.loginEmail}) = ${identity.email}`, eq(departmentAccounts.isActive, true))).limit(1);
-    if (departmentAccount) throw new Error("حساب القسم لا يستخدم Google أو كلمة مرور مباشرة. ادخل ببريدك الشخصي ثم بدّل إلى هوية القسم عند التكليف.");
+    const departmentAccount = await findDepartmentAccountByLoginEmail(identity.email);
+    if (departmentAccount?.isActive) throw new Error("حساب القسم لا يستخدم Google أو كلمة مرور مباشرة. ادخل ببريدك الشخصي ثم بدّل إلى هوية القسم عند التكليف.");
     const [grant] = await db.select().from(accessGrants).where(and(sql`LOWER(${accessGrants.officialEmail}) = ${identity.email}`, eq(accessGrants.isActive, true))).limit(1);
     if (!grant) throw new Error("لا يوجد ملف موظف شخصي نشط مرتبط بهذا البريد الرسمي.");
     const accountName = grant.fullName ?? identity.name;

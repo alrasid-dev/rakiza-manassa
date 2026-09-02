@@ -125,12 +125,23 @@ export function otpDigest(email: string, code: string, expiresAt: Date) {
   return createHmac("sha256", ENV.cookieSecret || "rakiza-otp-fallback").update(`${email}:${code}:${expiresAtSeconds}`).digest("hex");
 }
 
+export async function findDepartmentAccountByLoginEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  try {
+    return (await db.select({ id: departmentAccounts.id, isActive: departmentAccounts.isActive }).from(departmentAccounts).where(eq(departmentAccounts.loginEmail, email.trim().toLowerCase())).limit(1))[0];
+  } catch (error) {
+    console.warn("[login] تعذر قراءة حسابات الأقسام؛ يُتابع الدخول كحساب شخصي", error);
+    return undefined;
+  }
+}
+
 export async function requestOtpCode(input: { officialEmail: string; requestIp?: string | null }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
   const email = input.officialEmail.trim().toLowerCase();
   if (!isAllowedLoginEmail(email)) throw new Error("استخدم البريد الرسمي أو بريد مالك رَكيزة المهيأ.");
-  const departmentAccount = (await db.select().from(departmentAccounts).where(sql`LOWER(${departmentAccounts.loginEmail}) = ${email}`).limit(1))[0];
+  const departmentAccount = await findDepartmentAccountByLoginEmail(email);
   if (departmentAccount) throw new Error(departmentAccount.isActive ? "حساب القسم لا يسجل الدخول مباشرة. ادخل ببريدك الشخصي ثم بدّل إلى هوية القسم عند وجود تكليف نشط." : "حساب القسم موجود لكنه غير مفعّل بعد.");
   let user = (await db.select({ id: users.id, name: users.name, email: users.email, backupEmail: users.backupEmail }).from(users).where(eq(users.email, email)).limit(1))[0];
   if (!user) {
@@ -2367,11 +2378,8 @@ export async function getAccessPermission(email: string | null | undefined): Pro
     .where(and(eq(accessGrants.officialEmail, normalizedEmail), eq(accessGrants.isActive, true)))
     .limit(1);
   if (rows[0]?.permission) return rows[0].permission;
-  const department = await db.select({ id: departmentAccounts.id })
-    .from(departmentAccounts)
-    .where(and(sql`LOWER(${departmentAccounts.loginEmail}) = ${normalizedEmail}`, eq(departmentAccounts.isActive, true)))
-    .limit(1);
-  return department[0] ? "general_view" : null;
+  const department = await findDepartmentAccountByLoginEmail(normalizedEmail);
+  return department?.isActive ? "general_view" : null;
 }
 
 export async function submitRegistrationRequest(input: { fullName: string; officialEmail: string; notificationEmail: string; phone?: string; privacyNoticeVersion: string; privacyAcknowledged: boolean }) {
