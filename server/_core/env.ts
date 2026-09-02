@@ -13,4 +13,19 @@ export const ENV = {
   vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:rakizaplatform@gmail.com",
   vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
+  supabaseUrl: (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim(),
+  supabasePublishableKey: (process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "").trim(),
 };
+
+export function isSupabaseProjectUrl(url = ENV.supabaseUrl) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && /^[a-z0-9-]+\.supabase\.co$/i.test(parsed.host);
+  } catch {
+    return false;
+  }
+}
+
+export function databaseReady() {
+  return Boolean(ENV.databaseUrl);
+}

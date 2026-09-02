@@ -4,3 +4,7 @@ coverage
 tmp
 temp
 *.log
+.env
+.env.*
+!.env.example
+.project-config.json

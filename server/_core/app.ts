@@ -10,7 +10,7 @@ import { handleDailyTaskReminderSchedule, handleLeaveStatusRefreshSchedule, hand
 import { handleAttendanceConfirmationSchedule } from "../scheduled/attendance-confirmation";
 import { handleInternalMailSchedule } from "../scheduled/internal-mail";
 import { trpcMutationOriginGuard } from "./originGuard";
-import { securityHeaders } from "./securityHeaders";
+import { dataConnectionsStatus } from "./data-connections";
 
 export function createExpressApp() {
   const app = express();
@@ -36,7 +36,7 @@ export function createExpressApp() {
     })
   );
   app.get("/health", (_req, res) => {
-    res.json({ ok: true, name: "rakiza", brand: "رَكيزة" });
+    res.json({ ok: true, name: "rakiza", brand: "رَكيزة", ...dataConnectionsStatus() });
   });
   return app;
 }
