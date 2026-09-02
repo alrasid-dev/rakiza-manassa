@@ -2,14 +2,11 @@
   "$schema": "https://vercel.sh",
   "framework": null,
   "installCommand": "npx --yes pnpm@10.4.1 install --frozen-lockfile",
-  "buildCommand": "npx --yes pnpm@10.4.1 exec vite build",
-  "outputDirectory": "dist/public",
-  "cleanUrls": true,
-  "trailingSlash": false,
+  "buildCommand": "npx --yes pnpm@10.4.1 run vercel-build",
   "rewrites": [
     {
-      "source": "/:path*",
-      "destination": "/index.html"
+      "source": "/(.*)",
+      "destination": "/api"
     }
   ]
 }

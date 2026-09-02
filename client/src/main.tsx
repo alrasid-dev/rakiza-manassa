@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { platformHref, registerPlatformServiceWorker } from "./lib/pwa";
+import { messageIfHtmlApiBody, trpcHttpUrl } from "./lib/runtime";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -41,7 +42,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: trpcHttpUrl(),
       transformer: superjson,
       headers() {
         // Preview auto-login fallback: when the browser blocks iframe cookies
@@ -67,6 +68,11 @@ const trpcClient = trpc.createClient({
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
+        }).then(async response => {
+          const contentType = response.headers.get("content-type") || "";
+          const htmlMessage = messageIfHtmlApiBody(await response.clone().text(), contentType);
+          if (htmlMessage) throw new Error(htmlMessage);
+          return response;
         });
       },
     }),
