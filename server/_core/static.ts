@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 function moduleDirname() {
-  return typeof import.meta.dirname === "string" ? import.meta.dirname : path.dirname(fileURLToPath(import.meta.url));
+  return path.dirname(fileURLToPath(import.meta.url));
 }
 
 export function resolvePublicDir() {

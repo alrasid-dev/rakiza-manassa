@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { platformHref, registerPlatformServiceWorker } from "./lib/pwa";
 import { messageIfHtmlApiBody, trpcHttpUrl } from "./lib/runtime";
+import "./lib/supabase-env";
 import "./index.css";
 
 const queryClient = new QueryClient();

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { nanoid } from "nanoid";
 
 function moduleDirname() {
-  return typeof import.meta.dirname === "string" ? import.meta.dirname : path.dirname(fileURLToPath(import.meta.url));
+  return path.dirname(fileURLToPath(import.meta.url));
 }
 
 /** تطوير محلي فقط. لا يُستورد هذا الملف أثناء بناء Vercel حتى لا يُحمَّل Vite مع الدالة. */

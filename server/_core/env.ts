@@ -1,20 +1,28 @@
+function readEnv(...names: string[]) {
+  for (const name of names) {
+    const value = typeof process !== "undefined" ? process.env[name] : undefined;
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
-  ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
-  platformOwnerEmail: (process.env.PLATFORM_OWNER_EMAIL ?? "rakizaplatform@gmail.com").trim().toLowerCase(),
+  appId: readEnv("VITE_APP_ID"),
+  cookieSecret: readEnv("JWT_SECRET", "VITE_JWT_SECRET"),
+  databaseUrl: readEnv("DATABASE_URL", "VITE_DATABASE_URL"),
+  oAuthServerUrl: readEnv("OAUTH_SERVER_URL"),
+  ownerOpenId: readEnv("OWNER_OPEN_ID"),
+  platformOwnerEmail: (readEnv("PLATFORM_OWNER_EMAIL") || "rakizaplatform@gmail.com").toLowerCase(),
   isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  brevoApiKey: process.env.BREVO_API_KEY ?? "",
-  brevoSenderEmail: process.env.BREVO_SENDER_EMAIL ?? "",
-  vapidSubject: process.env.VAPID_SUBJECT ?? "mailto:rakizaplatform@gmail.com",
-  vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? "",
-  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? "",
-  supabaseUrl: (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim(),
-  supabasePublishableKey: (process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "").trim(),
+  forgeApiUrl: readEnv("BUILT_IN_FORGE_API_URL"),
+  forgeApiKey: readEnv("BUILT_IN_FORGE_API_KEY"),
+  brevoApiKey: readEnv("BREVO_API_KEY"),
+  brevoSenderEmail: readEnv("BREVO_SENDER_EMAIL"),
+  vapidSubject: readEnv("VAPID_SUBJECT") || "mailto:rakizaplatform@gmail.com",
+  vapidPublicKey: readEnv("VAPID_PUBLIC_KEY"),
+  vapidPrivateKey: readEnv("VAPID_PRIVATE_KEY"),
+  supabaseUrl: readEnv("VITE_SUPABASE_URL", "SUPABASE_URL"),
+  supabaseAnonKey: readEnv("VITE_SUPABASE_ANON_KEY", "VITE_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_ANON_KEY", "SUPABASE_PUBLISHABLE_KEY"),
 };
 
 export function isSupabaseProjectUrl(url = ENV.supabaseUrl) {
