@@ -9,6 +9,7 @@ mobile/node_modules/
 dist/
 build/
 /public
+api/handler.js
 
 # Vercel
 .vercel

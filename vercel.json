@@ -6,7 +6,7 @@
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
-      "includeFiles": "public/**"
+      "includeFiles": "{public/**,api/handler.js}"
     }
   },
   "rewrites": [

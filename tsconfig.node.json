@@ -21,5 +21,5 @@
     }
   },
   "include": ["server/**/*.ts", "shared/**/*.ts", "api/**/*.ts", "server.ts", "drizzle/**/*.ts"],
-  "exclude": ["node_modules", "build", "dist", "client", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"]
+  "exclude": ["node_modules", "build", "dist", "client", "api/index.ts", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"]
 }
