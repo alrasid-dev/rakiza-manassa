@@ -193,7 +193,7 @@ export async function globalSearch(input: { query: string; userId: number; limit
 
 export async function getOwnerLeadershipKpis() {
   const db = await getDb();
-  const period = { startAt: reportStart("monthly"), endAt: new Date() };
+  const period = { startAt: reportStart("monthly", new Date()), endAt: new Date() };
   const [units, observatory, delays, completed] = await Promise.all([
     getDepartmentPerformance({ startAt: period.startAt, endAt: period.endAt }),
     getLeadershipWorkloadObservatory(),

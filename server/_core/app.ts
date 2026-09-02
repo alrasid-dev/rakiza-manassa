@@ -10,6 +10,7 @@ import { handleDailyTaskReminderSchedule, handleLeaveStatusRefreshSchedule, hand
 import { handleAttendanceConfirmationSchedule } from "../scheduled/attendance-confirmation";
 import { handleInternalMailSchedule } from "../scheduled/internal-mail";
 import { trpcMutationOriginGuard } from "./originGuard";
+import { securityHeaders } from "./securityHeaders";
 import { dataConnectionsStatus } from "./data-connections";
 
 export function createExpressApp() {

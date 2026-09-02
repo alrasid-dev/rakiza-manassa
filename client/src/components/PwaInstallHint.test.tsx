@@ -17,6 +17,6 @@ describe("إرشاد تثبيت التطبيق", () => {
 
   it("يعرض تعليمات التثبيت حتى لو لم يطلق المتصفح حدث التثبيت", () => {
     render(<PwaInstallHint alwaysVisible />);
-    expect(screen.getByRole("link", { name: "كل الأجهزة" })).toHaveAttribute("href", expect.stringMatching(/apps$/));
+    expect(screen.getByRole("link", { name: "كل الأجهزة" }).getAttribute("href") || "").toMatch(/apps$/);
   });
 });

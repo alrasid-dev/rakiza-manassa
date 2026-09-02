@@ -16,7 +16,7 @@ export function platformServiceWorkerUrl(base = platformBasePath()) {
   return `${base}sw.js`;
 }
 
-export function isStandaloneDisplay(media = typeof window === "undefined" || typeof window.matchMedia !== "function" ? undefined : window.matchMedia.bind(window), navigatorLike: { standalone?: boolean } | undefined = typeof navigator === "undefined" ? undefined : navigator) {
+export function isStandaloneDisplay(media = typeof window === "undefined" || typeof window.matchMedia !== "function" ? undefined : window.matchMedia.bind(window), navigatorLike: { standalone?: boolean } | undefined = typeof navigator === "undefined" ? undefined : (navigator as Navigator & { standalone?: boolean })) {
   try {
     return Boolean(media?.("(display-mode: standalone)")?.matches || media?.("(display-mode: window-controls-overlay)")?.matches || navigatorLike?.standalone);
   } catch {

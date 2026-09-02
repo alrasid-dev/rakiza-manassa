@@ -12,6 +12,6 @@ describe("صفحة تثبيت التطبيقات", () => {
     expect(screen.getByText("ويندوز وماك ولينكس")).toBeTruthy();
     expect(screen.getByText("أندرويد")).toBeTruthy();
     expect(screen.getByText("آيفون وآيباد")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "تنزيل تطبيق أندرويد" })).toHaveAttribute("href", ANDROID_APK_URL);
+    expect(screen.getByRole("link", { name: "تنزيل تطبيق أندرويد" }).getAttribute("href")).toBe(ANDROID_APK_URL);
   });
 });
