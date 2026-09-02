@@ -57,7 +57,7 @@ export async function beginPasskeyRegistration(input: { userId: number; official
     rpID: rpId(input.origin),
     userName: email,
     userDisplayName: user.name ?? email,
-    userID: new TextEncoder().encode(email),
+    userID: new Uint8Array(new TextEncoder().encode(email)),
     attestationType: "none",
     excludeCredentials: existing.map(item => ({ id: item.credentialId })),
     authenticatorSelection: { residentKey: "preferred", userVerification: "required" },

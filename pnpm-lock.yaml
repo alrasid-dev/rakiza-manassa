@@ -121,6 +121,12 @@ importers:
       '@trpc/server':
         specifier: ^11.6.0
         version: 11.6.0(typescript@5.9.3)
+      '@types/express':
+        specifier: 4.17.21
+        version: 4.17.21
+      '@types/node':
+        specifier: ^24.7.0
+        version: 24.7.0
       archiver:
         specifier: ^8.0.0
         version: 8.0.0
@@ -248,15 +254,9 @@ importers:
       '@types/archiver':
         specifier: ^8.0.0
         version: 8.0.0
-      '@types/express':
-        specifier: 4.17.21
-        version: 4.17.21
       '@types/google.maps':
         specifier: ^3.58.1
         version: 3.58.1
-      '@types/node':
-        specifier: ^24.7.0
-        version: 24.7.0
       '@types/react':
         specifier: ^19.2.1
         version: 19.2.1
