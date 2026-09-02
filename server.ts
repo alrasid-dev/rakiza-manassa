@@ -1,5 +1,6 @@
-import express from "express";
-import app from "./server/_core/index";
+import { app } from "./server/_core/app";
+import { serveStatic } from "./server/_core/static";
 
-void express;
+serveStatic(app);
+
 export default app;
