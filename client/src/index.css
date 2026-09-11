@@ -43,6 +43,8 @@
 }
 
 :root {
+  --rakiza-font-family: Tajawal, "Noto Naskh Arabic", sans-serif;
+  --rakiza-font-scale: 1;
   --rakiza-canvas: #b6b7af;
   --rakiza-surface: #f8f8f3;
   --rakiza-surface-muted: #eff0e9;
@@ -160,7 +162,11 @@
 
 @layer base {
   html {
-    font-size: clamp(15px, 0.35vw + 14.4px, 17px);
+    font-size: calc(clamp(15px, 0.35vw + 14.4px, 17px) * var(--rakiza-font-scale, 1));
+    font-family: var(--rakiza-font-family, Tajawal, sans-serif);
+  }
+  body, .rakiza-theme-root {
+    font-family: var(--rakiza-font-family, Tajawal, sans-serif);
   }
   html, body, #root {
     min-height: 100%;

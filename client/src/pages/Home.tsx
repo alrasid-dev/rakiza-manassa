@@ -1,23 +1,15 @@
 import DashboardLayout from "@/components/DashboardLayout";
-import { ArrowLeft, BarChart3, BellRing, Building2, CalendarDays, ClipboardCheck, Download, FileBarChart2, ImageDown, ListChecks, MessageCircle, Play, Scale, Settings2, ShieldAlert, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowLeft, BarChart3, BellRing, CalendarDays, ClipboardCheck, Download, ImageDown, ListChecks, MessageCircle, Play, Settings2, ShieldAlert } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { jsPDF } from "jspdf";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DashboardCustomizationDialog, defaultDashboardPreferences, normalizeDashboardPreferences, type DashboardPreferenceState } from "@/components/DashboardCustomizationDialog";
+import DashboardQuickIcons from "@/components/DashboardQuickIcons";
+import DashboardRosterPanel from "@/components/DashboardRosterPanel";
 import { trpc } from "@/lib/trpc";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-
-const branches = [
-  ["رئاسة المحكمة", "مكتب رئيس المحكمة والرئيس المساعد ومكتبه", Building2],
-  ["شؤون القضاة", "القضاة وموظفو شؤون القضاة", Scale],
-  ["شؤون الملازمين", "الملازمون القضائيون وموظفو شؤون الملازمين", ShieldCheck],
-  ["الأمانة العامة", "أمين المحكمة والأمين المساعد وموظفو الأمانة", UsersRound],
-  ["الدعاوى والأحكام", "تسليم الأحكام وخدمات المستفيدين", ClipboardCheck],
-  ["الباحثون وأمانة السر", "الباحثون وأمانة السر ووحدات القضايا والأحكام", ListChecks],
-  ["مراقبة الأداء", "تقارير الأقسام والتحقق من المهام", FileBarChart2],
-] as const;
 
 type Metrics = { scope?: "unit"; profiles?: number; openDelays?: number; overdueDelays?: number; dueTasks?: number; openTasks?: number; overdueTasks?: number; unreadNotifications?: number };
 
@@ -56,8 +48,10 @@ function Metric({ label, value, note, icon: Icon, tone }: { label: string; value
   return <article className={`rounded-2xl p-5 shadow-[0_10px_25px_rgba(36,58,50,0.05)] ${tone}`}><div className="flex items-start justify-between"><Icon className="h-5 w-5 opacity-80" /><span className="text-3xl font-bold">{value}</span></div><p className="mt-7 text-sm font-bold">{label}</p><p className="mt-1 text-xs leading-5 opacity-75">{note}</p></article>;
 }
 
-function ReferenceMetric({ label, value, note, icon: Icon, tone }: { label: string; value: string; note: string; icon: typeof ListChecks; tone: string }) {
-  return <article className={`relative overflow-hidden rounded-xl border px-3 py-2.5 shadow-[0_5px_15px_rgba(36,67,51,0.045)] ${tone}`}><span className="absolute inset-y-0 right-0 w-1 bg-current opacity-35" aria-hidden="true" /><div className="flex items-center justify-between gap-2"><span className={dashboardMetricIconSlotClass}><Icon className="rakiza-olive-icon h-4 w-4" strokeWidth={2} aria-hidden="true" /></span><div className="min-w-0 text-left"><p className="text-xl font-black tracking-tight">{value}</p><p className="mt-0.5 truncate text-[11px] font-bold">{label}</p></div></div><p className="mt-2 border-t border-current/10 pt-1.5 truncate text-[10px] font-semibold opacity-75">{note}</p></article>;
+function ReferenceMetric({ label, value, note, icon: Icon, tone, onClick }: { label: string; value: string; note: string; icon: typeof ListChecks; tone: string; onClick?: () => void }) {
+  const body = <><span className="absolute inset-y-0 right-0 w-1 bg-current opacity-55" aria-hidden="true" /><div className="flex items-center justify-between gap-2"><span className={`${dashboardMetricIconSlotClass} shadow-sm`}><Icon className="rakiza-olive-icon h-4 w-4" strokeWidth={2.25} aria-hidden="true" /></span><div className="min-w-0 text-left"><p className="text-xl font-black tracking-tight">{value}</p><p className="mt-0.5 truncate text-[11px] font-bold">{label}</p></div></div><p className="mt-2 border-t border-current/10 pt-1.5 truncate text-[10px] font-semibold opacity-80">{note}</p></>;
+  if (onClick) return <button type="button" onClick={onClick} className={`relative block w-full overflow-hidden rounded-xl border px-3 py-2.5 text-right shadow-[0_5px_15px_rgba(36,67,51,0.045)] transition hover:brightness-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#78a886] ${tone}`}>{body}</button>;
+  return <article className={`relative overflow-hidden rounded-xl border px-3 py-2.5 shadow-[0_5px_15px_rgba(36,67,51,0.045)] ${tone}`}>{body}</article>;
 }
 
 function DashboardTaskRow({ task, onOpen, onStart, onComplete, onComment, onReassignment, onObstacle, canStart, canOperate, canReportObstacle, actionPending, isJustCompleted }: { task: DashboardTask; onOpen: () => void; onStart: () => void; onComplete: () => void; onComment: () => void; onReassignment: () => void; onObstacle: () => void; canStart: boolean; canOperate: boolean; canReportObstacle: boolean; actionPending: boolean; isJustCompleted: boolean }) {
@@ -146,7 +140,7 @@ export default function Home() {
   const dashboardTasks = taskListProcedure?.useQuery ? taskListProcedure.useQuery() : { data: [] as DashboardTask[], isLoading: false, refetch: async () => undefined };
   const dashboardPreferencesProcedure = trpc.court.dashboardPreferences;
   const savedDashboardPreferences = dashboardPreferencesProcedure?.mine?.useQuery ? dashboardPreferencesProcedure.mine.useQuery() : { data: undefined as DashboardPreferenceState | undefined, isLoading: false };
-  const saveDashboardPreferences = dashboardPreferencesProcedure?.update?.useMutation ? dashboardPreferencesProcedure.update.useMutation({ onSuccess: preferences => { setDashboardPreferences(preferences as DashboardPreferenceState); setDashboardCustomizationOpen(false); toast.success("تم حفظ تخصيص لوحة القيادة."); }, onError: error => toast.error(error.message) }) : { mutate: (_preferences: DashboardPreferenceState) => toast.error("خدمة تخصيص اللوحة غير متاحة حالياً."), isPending: false };
+  const saveDashboardPreferences = dashboardPreferencesProcedure?.update?.useMutation ? dashboardPreferencesProcedure.update.useMutation({ onSuccess: preferences => { setDashboardPreferences(preferences as DashboardPreferenceState); setDashboardCustomizationOpen(false); toast.success("تم حفظ لوحة تخصيص القيادة."); }, onError: error => toast.error(error.message) }) : { mutate: (_preferences: DashboardPreferenceState) => toast.error("خدمة تخصيص اللوحة غير متاحة حالياً."), isPending: false };
   const currentProfileProcedure = trpc.court.people?.self;
   const currentProfile = currentProfileProcedure?.useQuery ? currentProfileProcedure.useQuery() : { data: undefined as { id: number } | undefined };
   const acknowledgeProcedure = trpc.court.tasks?.acknowledge;
@@ -224,7 +218,7 @@ export default function Home() {
   const departmentConversation = conversations.data?.find(row => row.conversation.conversationType === "department")?.conversation;
 
   const isWidgetVisible = (widgetId: DashboardPreferenceState["widgetOrder"][number]) => !dashboardPreferences.hiddenWidgetIds.includes(widgetId);
-  const dashboardCustomizer = <button type="button" onClick={() => setDashboardCustomizationOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-xs font-black text-white transition hover:bg-white/15"><Settings2 className="h-4 w-4 text-[#a8c98f]" />تخصيص لوحة القيادة</button>;
+  const dashboardCustomizer = <button type="button" onClick={() => setDashboardCustomizationOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-xs font-black text-white transition hover:bg-white/15"><Settings2 className="h-4 w-4 text-[#a8c98f]" />لوحة تخصيص القيادة</button>;
   return <DashboardLayout hideUtilityPrompts dashboardCustomization={dashboardCustomizer} navigationPreferences={dashboardPreferences}><section className="mx-auto max-w-[1240px]" dir="rtl">
     <section dir="ltr" className="mt-5 flex flex-col gap-4 border-b border-[#cdd7cc] pb-5 lg:flex-row lg:items-end lg:justify-between lg:gap-5">
       <div dir="rtl" className="flex items-end gap-3 rounded-xl border border-[#cfd7ca] bg-[#f7f8f3] px-4 py-3 text-right shadow-[0_5px_15px_rgba(36,67,51,0.045)] lg:min-w-[15rem]">
@@ -238,10 +232,13 @@ export default function Home() {
       </div>
     </section>
 
+    <DashboardQuickIcons />
+    <DashboardRosterPanel />
+
     {showOwnerKpis && ownerKpis.data ? <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="مؤشرات القيادة"><article className="rounded-xl bg-[#e9f3ea] p-4"><p className="text-[11px] font-bold">متوسط إنجاز الأقسام</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.departmentCompletionRate}%</p></article><article className="rounded-xl bg-[#fff4ec] p-4"><p className="text-[11px] font-bold">أقسام بضغط مرتفع</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.highPressureDepartments?.length ?? 0}</p></article><article className="rounded-xl bg-[#fbeae5] p-4"><p className="text-[11px] font-bold">مساءلات مفتوحة</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.accountabilityCount}</p></article><button type="button" onClick={() => setLocation("/owner-kpi")} className="rounded-xl bg-[#f4f2e8] p-4 text-right"><p className="text-[11px] font-bold">متوسط وقت الإنجاز</p><p className="mt-1 text-2xl font-black">{ownerKpis.data.averageCompletionHours ?? "—"}</p><p className="mt-1 text-[10px] font-bold text-[#006c35]">فتح مؤشرات القيادة</p></button></section> : null}
 
     {isWidgetVisible("overview") && <section className="mt-6 grid gap-3 xl:grid-cols-[minmax(0,1fr)_16.5rem]" aria-label="ملخص حالات المهام والتنبيهات">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><ReferenceMetric label="مهام اليوم" value={number(todayTasks.length || metrics.openTasks)} note="المهام الظاهرة اليوم" icon={ListChecks} tone="border-[#c7d9c8] bg-[#e7f0e7] text-[#2d684a]" /><ReferenceMetric label="قرب موعدها" value={number(dueSoonTaskCount || dueTasks)} note="تحتاج مراجعة قبل الاستحقاق" icon={BellRing} tone="border-[#e2d3a5] bg-[#f5edd8] text-[#80642b]" /><ReferenceMetric label="بدأ التنفيذ" value={number(inProgressTaskCount)} note="قيد المعالجة الآن" icon={Settings2} tone="border-[#c6d8c7] bg-[#e4eee5] text-[#35634c]" /><ReferenceMetric label="بانتظار اعتمادي" value={number(reviewTaskCount)} note="تحت المراجعة أو الاعتماد" icon={ClipboardCheck} tone="border-[#d1dccd] bg-[#edf1e8] text-[#486455]" /><ReferenceMetric label="مهام متأخرة" value={number(overdueTasks)} note={overdueTasks ? "تحتاج إجراءً اليوم" : "لا يوجد تأخر"} icon={ClipboardCheck} tone="border-[#e2c9c0] bg-[#f8e6e1] text-[#a8493b]" /></div>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"><ReferenceMetric label="مهام اليوم" value={number(todayTasks.length || metrics.openTasks)} note="المهام الظاهرة اليوم" icon={ListChecks} tone="border-[#8fbf9a] bg-[#d9f0df] text-[#14633d]" onClick={() => setLocation("/tasks")} /><ReferenceMetric label="قرب موعدها" value={number(dueSoonTaskCount || dueTasks)} note="تحتاج مراجعة قبل الاستحقاق" icon={BellRing} tone="border-[#e0c36a] bg-[#f8ebc0] text-[#8a6210]" onClick={() => setLocation("/tasks")} /><ReferenceMetric label="بدأ التنفيذ" value={number(inProgressTaskCount)} note="قيد المعالجة الآن" icon={Settings2} tone="border-[#8fbf9a] bg-[#dff0e3] text-[#1f6a45]" onClick={() => setLocation("/tasks")} /><ReferenceMetric label="بانتظار اعتمادي" value={number(reviewTaskCount)} note="تحت المراجعة أو الاعتماد" icon={ClipboardCheck} tone="border-[#b7c9b5] bg-[#e7efe4] text-[#355d4b]" onClick={() => setLocation("/approvals")} /><ReferenceMetric label="مهام متأخرة" value={number(overdueTasks)} note={overdueTasks ? "تحتاج إجراءً اليوم" : "لا يوجد تأخر"} icon={ClipboardCheck} tone="border-[#e09a8c] bg-[#f8d7d0] text-[#b51f2b]" onClick={() => setLocation("/tasks")} /></div>
       <section className="rounded-xl border border-[#cfd7ca] bg-[#f7f8f3] px-3 py-2.5 shadow-[0_5px_15px_rgba(36,67,51,0.045)]" aria-label="التنبيهات المختصرة"><div className="flex items-center justify-between"><span className="text-[11px] font-black text-[#25463a]">تنبيهات سريعة</span><BellRing className="h-4 w-4 text-[#4a785a]" /></div>{referenceAlerts.length ? <div className="mt-1.5 space-y-1.5">{referenceAlerts.slice(0, 2).map(alert => <button type="button" key={alert.label} onClick={() => setLocation(alert.label === "رسائل غير مقروءة" ? "/messages" : "/tasks")} className="flex w-full items-center gap-2 text-right"><span className={`h-2 w-2 shrink-0 rounded-full ${alert.dot}`} /><span className={`min-w-0 flex-1 truncate text-[10px] font-bold ${alert.tone}`}>{alert.label}</span><span className="text-[10px] text-[#758279]">{alert.time}</span></button>)}</div> : <p className="mt-2 text-[10px] text-[#758279]">لا توجد تنبيهات عاجلة.</p>}</section>
     </section>}
 

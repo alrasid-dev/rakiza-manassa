@@ -1231,7 +1231,7 @@ export async function getUserEmailSettings(userId: number) {
 }
 
 export const DASHBOARD_WIDGET_IDS = ["overview", "tasks", "chat", "performance"] as const;
-export const DASHBOARD_NAVIGATION_LABELS = ["مهامي", "الإشعارات", "الدردشات", "بريد ركيزة", "AI ركيزة", "الإعلانات الداخلية", "المتعثرات", "إعدادات المنصة"] as const;
+export const DASHBOARD_NAVIGATION_LABELS = ["الرئيسية", "مهامي", "الإشعارات", "الدردشات", "بريد ركيزة", "AI ركيزة", "الإعلانات الداخلية", "المتعثرات", "رفع التقارير", "دليل المستخدم", "إعدادات الموظف", "إعدادات المنصة"] as const;
 export type DashboardWidgetId = typeof DASHBOARD_WIDGET_IDS[number];
 export type DashboardNavigationLabel = typeof DASHBOARD_NAVIGATION_LABELS[number];
 export type DashboardPreferences = { widgetOrder: DashboardWidgetId[]; hiddenWidgetIds: DashboardWidgetId[]; navigationOrder: DashboardNavigationLabel[]; hiddenNavigationLabels: DashboardNavigationLabel[] };
