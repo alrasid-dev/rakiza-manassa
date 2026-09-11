@@ -9,6 +9,9 @@ import { platformHref, registerPlatformServiceWorker } from "./lib/pwa";
 import { messageIfHtmlApiBody, trpcHttpUrl } from "./lib/runtime";
 import "./lib/supabase-env";
 import "./index.css";
+import { applyAppearancePreferences, readAppearancePreferences } from "./lib/appearance";
+const appearance = readAppearancePreferences();
+applyAppearancePreferences(appearance.fontId, appearance.sizeId);
 
 const queryClient = new QueryClient();
 

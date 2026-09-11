@@ -54,10 +54,18 @@ describe("navigation sections", () => {
     expect(items.find(item => item.label === "مؤشرات القيادة")?.icon).not.toBe(items.find(item => item.label === "شؤون القضاة")?.icon);
   });
 
+  it("يضع الرئيسية ورفع التقارير ودليل المستخدم ضمن لوحة القيادة بروابط حقيقية", () => {
+    const board = navigationSections.find(section => section.heading === "لوحة القيادة");
+    expect(board?.items.find(item => item.label === "الرئيسية")).toMatchObject({ path: "/" });
+    expect(board?.items.find(item => item.label === "رفع التقارير")).toMatchObject({ path: "/report-upload" });
+    expect(board?.items.find(item => item.label === "دليل المستخدم")).toMatchObject({ path: "/guide" });
+  });
+
   it("يلوّن آبار الأيقونات حسب العمل والرئاسة والتنبيه ويملأ الصفحة النشطة", () => {
     expect(navigationIconTone("لوحة القيادة", "مهامي")).toBe("olive");
     expect(navigationIconTone("رئاسة المحكمة", "تفويض")).toBe("gold");
     expect(navigationIconTone("لوحة القيادة", "المتعثرات")).toBe("alert");
+    expect(navigationIconTone("لوحة القيادة", "الإشعارات")).toBe("alert");
     expect(isNavigationPathActive("/rakiza-mail?focus=inbox", "/rakiza-mail?focus=search")).toBe(true);
     expect(isNavigationPathActive("/tasks", "/")).toBe(false);
   });

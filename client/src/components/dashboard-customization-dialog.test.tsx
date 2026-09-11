@@ -27,12 +27,12 @@ describe("تخصيص لوحة القيادة", () => {
     const dataTransfer = { effectAllowed: "", dropEffect: "", setData: vi.fn() };
     fireEvent.dragStart(screen.getByTestId("sortable-اختصارات القائمة اليمنى-الإشعارات"), { dataTransfer });
     fireEvent.drop(screen.getByTestId("sortable-اختصارات القائمة اليمنى-مهامي"), { dataTransfer });
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ navigationOrder: ["الإشعارات", "مهامي", ...defaultDashboardPreferences().navigationOrder.slice(2)] }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ navigationOrder: ["الرئيسية", "الإشعارات", "مهامي", ...defaultDashboardPreferences().navigationOrder.slice(3)] }));
   });
 
   it("يستعيد اختصارات القائمة فقط عبر الإجراء المستقل", () => {
     const onResetNavigation = vi.fn();
-    render(<DashboardCustomizationDialog open onOpenChange={vi.fn()} preferences={{ ...defaultDashboardPreferences(), widgetOrder: ["chat", "tasks", "overview", "performance"], navigationOrder: ["الدردشات", "مهامي", "الإشعارات", "بريد ركيزة", "AI ركيزة", "الإعلانات الداخلية", "المتعثرات", "إعدادات المنصة"] }} onChange={vi.fn()} onSave={vi.fn()} onResetNavigation={onResetNavigation} isSaving={false} />);
+    render(<DashboardCustomizationDialog open onOpenChange={vi.fn()} preferences={{ ...defaultDashboardPreferences(), widgetOrder: ["chat", "tasks", "overview", "performance"], navigationOrder: ["الدردشات", "الرئيسية", "مهامي", "الإشعارات", "بريد ركيزة", "AI ركيزة", "الإعلانات الداخلية", "المتعثرات", "رفع التقارير", "دليل المستخدم", "إعدادات الموظف", "إعدادات المنصة"] }} onChange={vi.fn()} onSave={vi.fn()} onResetNavigation={onResetNavigation} isSaving={false} />);
     fireEvent.click(screen.getByText("استعادة اختصارات القائمة"));
     expect(onResetNavigation).toHaveBeenCalledTimes(1);
   });
