@@ -1,10 +1,11 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, or } from "drizzle-orm";
 import type { Request, Response } from "express";
 import { attendanceRecords, notifications, personProfiles, scheduledJobConfigs } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { sdk } from "../_core/sdk";
 import { sendSafeScheduledFailure } from "./safe-scheduled-failure";
 import { attendanceConfirmationCadence, shouldRequestAttendanceConfirmation } from "../attendance-confirmation-policy";
+import { isProfileExcusedOrOnLeave, parseAttendanceTargetUnitIds } from "../court-service";
 
 const ACTIVE_REMOTE_MODES = ["remote", "mixed"] as const;
 
@@ -17,7 +18,7 @@ type AttendanceCycleResult = {
   policy: "enabled";
 };
 
-export async function runAttendanceConfirmationCycle(now = new Date(), targetProfileId?: number | null, audience: AttendanceAudience = "all"): Promise<AttendanceCycleResult> {
+export async function runAttendanceConfirmationCycle(now = new Date(), targetProfileId?: number | null, audience: AttendanceAudience = "all", targetUnitIds: number[] = []): Promise<AttendanceCycleResult> {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
 
@@ -25,6 +26,7 @@ export async function runAttendanceConfirmationCycle(now = new Date(), targetPro
   const audienceFilter = selectedAudiences.length === 3 ? undefined : or(...selectedAudiences.map(selected => selected === "employees" ? eq(personProfiles.personType, "administrative") : selected === "trainees" ? eq(personProfiles.personType, "trainee") : eq(personProfiles.personType, "judge")));
   const profileFilters = [eq(personProfiles.status, "active"), or(eq(personProfiles.attendanceMode, ACTIVE_REMOTE_MODES[0]), eq(personProfiles.attendanceMode, ACTIVE_REMOTE_MODES[1])), ...(audienceFilter ? [audienceFilter] : [])];
   if (targetProfileId !== undefined && targetProfileId !== null) profileFilters.push(eq(personProfiles.id, targetProfileId));
+  if (targetUnitIds.length) profileFilters.push(inArray(personProfiles.unitId, targetUnitIds));
   const profiles = await db.select().from(personProfiles).where(and(...profileFilters));
   const recentRequests = await db
     .select({ profileId: notifications.profileId, sentAt: notifications.sentAt })
@@ -39,6 +41,10 @@ export async function runAttendanceConfirmationCycle(now = new Date(), targetPro
   let notified = 0;
   let skipped = 0;
   for (const profile of profiles) {
+    if (await isProfileExcusedOrOnLeave(profile.id, now)) {
+      skipped += 1;
+      continue;
+    }
     const lastRequestedAt = lastRequestedByProfile.get(profile.id) ?? null;
     const recentAttendance = await db
       .select({ status: attendanceRecords.status, recordDate: attendanceRecords.recordDate })
@@ -78,7 +84,7 @@ export async function handleAttendanceConfirmationSchedule(req: Request, res: Re
     const config = (await db.select().from(scheduledJobConfigs).where(eq(scheduledJobConfigs.scheduleCronTaskUid, user.taskUid)).limit(1))[0];
     if (!config) return res.json({ ok: true, skipped: "orphan" });
     if (!config.isActive || config.jobType !== "attendance_confirmation") return res.json({ ok: true, skipped: "disabled-or-mismatch" });
-    const result = await runAttendanceConfirmationCycle(nowForAttendanceCycle(), config.attendanceTargetProfileId, (config.attendanceTargetAudience as AttendanceAudience) || "all");
+    const result = await runAttendanceConfirmationCycle(nowForAttendanceCycle(), config.attendanceTargetProfileId, (config.attendanceTargetAudience as AttendanceAudience) || "all", parseAttendanceTargetUnitIds(config.attendanceTargetUnitIds));
     return res.json({ ok: true, job: "attendance_confirmation", ...result, targetProfileId: config.attendanceTargetProfileId ?? null, taskUid: user.taskUid });
   } catch (error) {
     return sendSafeScheduledFailure(res, { publicCode: "attendance-confirmation-failed", job: "attendance_confirmation", url: req.originalUrl, error });

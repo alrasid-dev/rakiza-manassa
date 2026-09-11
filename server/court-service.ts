@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, gt, gte, inArray, isNull, isNotNull, lt, lte, ne, notInArray, or, sql } from "drizzle-orm";
 import { ENV } from "./_core/env";
+import { evaluateExcusePolicy } from "./excuse-policy";
+import { BASE_FLEX3_SHIFT, earlyCheckoutDeficitMinutes, saudiLocalMinutes } from "./attendance-balance";
 
 export async function sendBrevoTransactionalEmail(input: { to: string; recipientName?: string; subject: string; textContent: string; htmlContent?: string }) {
   if (!ENV.brevoApiKey || !ENV.brevoSenderEmail) throw new Error("إعدادات Brevo غير مكتملة.");
@@ -2092,11 +2094,16 @@ export async function acknowledgeTask(input: { taskId: number; actorUserId: numb
 export type AttendanceAudience = "employees" | "trainees" | "judges" | "all" | "employees,trainees" | "employees,judges" | "trainees,judges" | "employees,trainees,judges";
 function normalizeAttendanceAudience(value: AttendanceAudience): AttendanceAudience { const parts = value.split(",").filter(item => item === "employees" || item === "trainees" || item === "judges"); return parts.length === 3 ? "all" : parts.join(",") as AttendanceAudience; }
 
+export function parseAttendanceTargetUnitIds(raw: string | null | undefined) {
+  if (!raw || !raw.trim()) return [] as number[];
+  return raw.split(",").map(item => Number(item.trim())).filter(id => Number.isInteger(id) && id > 0);
+}
+
 export async function getAttendanceConfirmationConfig() {
   const db = await getDb();
-  if (!db) return { isActive: false, cronExpression: "0 0 4-12 * * 0-4", targetProfileId: null as number | null, audience: "all" as AttendanceAudience, shiftEnabled: false };
+  if (!db) return { isActive: false, cronExpression: "0 0 4-12 * * 0-4", targetProfileId: null as number | null, audience: "all" as AttendanceAudience, shiftEnabled: false, targetUnitIds: [] as number[] };
   const row = (await db.select().from(scheduledJobConfigs).where(eq(scheduledJobConfigs.jobType, "attendance_confirmation")).limit(1))[0];
-  return { isActive: row?.isActive ?? false, cronExpression: row?.cronExpression ?? "0 0 4-12 * * 0-4", targetProfileId: row?.attendanceTargetProfileId ?? null, audience: (row?.attendanceTargetAudience as AttendanceAudience) || "all", shiftEnabled: row?.attendanceShiftEnabled ?? false };
+  return { isActive: row?.isActive ?? false, cronExpression: row?.cronExpression ?? "0 0 4-12 * * 0-4", targetProfileId: row?.attendanceTargetProfileId ?? null, audience: (row?.attendanceTargetAudience as AttendanceAudience) || "all", shiftEnabled: row?.attendanceShiftEnabled ?? false, targetUnitIds: parseAttendanceTargetUnitIds(row?.attendanceTargetUnitIds) };
 }
 export async function listWorkShifts() {
   const db = await getDb();
@@ -2113,6 +2120,25 @@ export function attendanceWindowKindForShift(shift: Pick<typeof workShifts.$infe
   if (minutes >= shift.fingerprintOpenMinutes && minutes <= shift.morningCompensationDeadlineMinutes) return "check_in" as const;
   if (minutes >= shift.actualEndMinutes && minutes <= shift.fingerprintCloseMinutes) return "check_out" as const;
   return "none" as const;
+}
+
+
+export async function isProfileExcusedOrOnLeave(profileId: number, now = new Date()) {
+  const db = await getDb();
+  if (!db) return false;
+  const [profile] = await db.select({ status: personProfiles.status }).from(personProfiles).where(eq(personProfiles.id, profileId)).limit(1);
+  if (profile?.status === "on_leave") return true;
+  const activeLeave = await db.select({ id: leaveRequests.id, requestType: leaveRequests.requestType }).from(leaveRequests).where(and(
+    eq(leaveRequests.profileId, profileId),
+    inArray(leaveRequests.status, ["approved", "active"]),
+    lte(leaveRequests.startAt, now),
+    gte(leaveRequests.endAt, now),
+  )).limit(1);
+  if (activeLeave[0]) return true;
+  const dayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const todayAttendance = (await db.select({ status: attendanceRecords.status }).from(attendanceRecords).where(and(eq(attendanceRecords.profileId, profileId), gte(attendanceRecords.recordDate, dayStart), lt(attendanceRecords.recordDate, dayEnd))).limit(1))[0];
+  return todayAttendance?.status === "excused" || todayAttendance?.status === "on_leave";
 }
 
 export async function getAttendanceWindowForProfile(profileId: number, now = new Date()) {
@@ -2139,21 +2165,41 @@ export async function updateWorkShift(input: { id: number; name: string; startMi
   return listWorkShifts();
 }
 
-export async function setAttendanceConfirmationConfig(input: { isActive?: boolean; actorUserId: number; targetProfileId?: number | null; audience?: AttendanceAudience; shiftEnabled?: boolean }) {
+export async function setAttendanceConfirmationConfig(input: { isActive?: boolean; actorUserId: number; targetProfileId?: number | null; audience?: AttendanceAudience; shiftEnabled?: boolean; targetUnitIds?: number[] | null }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
   const [currentConfig] = await db.select({ isActive: scheduledJobConfigs.isActive }).from(scheduledJobConfigs).where(eq(scheduledJobConfigs.jobType, "attendance_confirmation")).limit(1);
   const targetProfileId = input.targetProfileId === undefined ? undefined : input.targetProfileId ?? null;
   const audience = normalizeAttendanceAudience(input.audience ?? "all");
   const isActive = input.isActive ?? currentConfig?.isActive ?? false;
+  const targetUnitIds = input.targetUnitIds === undefined ? undefined : Array.from(new Set((input.targetUnitIds ?? []).filter(id => Number.isInteger(id) && id > 0)));
   if (targetProfileId !== undefined && targetProfileId !== null) {
     const targetId = targetProfileId;
     const [target] = await db.select({ id: personProfiles.id }).from(personProfiles).where(and(eq(personProfiles.id, targetId), eq(personProfiles.status, "active"), or(eq(personProfiles.attendanceMode, "remote"), eq(personProfiles.attendanceMode, "mixed")))).limit(1);
     if (!target) throw new Error("الموظف المحدد غير نشط أو غير مؤهل لتأكيد الحضور عن بعد.");
   }
-  await db.update(scheduledJobConfigs).set({ isActive, ...(targetProfileId === undefined ? {} : { attendanceTargetProfileId: targetProfileId }), ...(input.audience === undefined ? {} : { attendanceTargetAudience: audience }), ...(input.shiftEnabled === undefined ? {} : { attendanceShiftEnabled: input.shiftEnabled }), updatedAt: new Date() }).where(eq(scheduledJobConfigs.jobType, "attendance_confirmation"));
-  const action = input.shiftEnabled !== undefined ? (input.shiftEnabled ? "attendance_shifts.enabled" : "attendance_shifts.disabled") : input.audience !== undefined && input.isActive === undefined ? "attendance_confirmation.audience_updated" : input.isActive === undefined ? "attendance_confirmation.target_updated" : input.isActive ? "attendance_confirmation.enabled" : "attendance_confirmation.disabled";
-  await logAudit({ actorUserId: input.actorUserId, action, entityType: "scheduled_job", metadata: { jobType: "attendance_confirmation", targetProfileId: targetProfileId ?? null, audience } });
+  if (targetUnitIds !== undefined && targetUnitIds.length) {
+    const units = await db.select({ id: organizationUnits.id }).from(organizationUnits).where(inArray(organizationUnits.id, targetUnitIds));
+    if (units.length !== targetUnitIds.length) throw new Error("أحد الأقسام المحددة غير موجود.");
+  }
+  await db.update(scheduledJobConfigs).set({
+    isActive,
+    ...(targetProfileId === undefined ? {} : { attendanceTargetProfileId: targetProfileId }),
+    ...(input.audience === undefined ? {} : { attendanceTargetAudience: audience }),
+    ...(input.shiftEnabled === undefined ? {} : { attendanceShiftEnabled: input.shiftEnabled }),
+    ...(targetUnitIds === undefined ? {} : { attendanceTargetUnitIds: targetUnitIds.join(",") }),
+    updatedAt: new Date(),
+  }).where(eq(scheduledJobConfigs.jobType, "attendance_confirmation"));
+  const action = input.shiftEnabled !== undefined
+    ? (input.shiftEnabled ? "attendance_shifts.enabled" : "attendance_shifts.disabled")
+    : targetUnitIds !== undefined && input.isActive === undefined
+      ? "attendance_confirmation.units_updated"
+      : input.audience !== undefined && input.isActive === undefined
+        ? "attendance_confirmation.audience_updated"
+        : input.isActive === undefined
+          ? "attendance_confirmation.target_updated"
+          : input.isActive ? "attendance_confirmation.enabled" : "attendance_confirmation.disabled";
+  await logAudit({ actorUserId: input.actorUserId, action, entityType: "scheduled_job", metadata: { jobType: "attendance_confirmation", targetProfileId: targetProfileId ?? null, audience, targetUnitIds: targetUnitIds ?? null } });
   return getAttendanceConfirmationConfig();
 }
 
@@ -2183,10 +2229,17 @@ export async function recordAttendanceCheckout(input: { profileId: number; check
   const existing = (await db.select().from(attendanceRecords).where(and(eq(attendanceRecords.profileId, input.profileId), gte(attendanceRecords.recordDate, dayStart), lt(attendanceRecords.recordDate, dayEnd))).orderBy(desc(attendanceRecords.recordDate)).limit(1))[0];
   if (!existing) throw new Error("لا يوجد سجل حضور مفتوح لهذا اليوم؛ أكد بدء العمل أولاً.");
   if (existing.checkOutAt) throw new Error("تم تسجيل الانصراف لهذا السجل مسبقاً.");
-  await db.update(attendanceRecords).set({ checkOutAt: input.checkOutAt, updatedAt: new Date() }).where(eq(attendanceRecords.id, existing.id));
-  await logAudit({ actorUserId: input.actorUserId, action: "attendance.checked_out", entityType: "attendance", entityId: existing.id, metadata: { profileId: input.profileId } });
-  await notifyPlatformOwnerSecurityAlert({ actorUserId: input.actorUserId, action: "attendance.checked_out", entityType: "attendance", entityId: existing.id, details: { profileId: input.profileId } });
-  return { success: true, attendanceId: existing.id };
+  const [profile] = await db.select({ shiftId: personProfiles.shiftId }).from(personProfiles).where(eq(personProfiles.id, input.profileId)).limit(1);
+  const shift = profile?.shiftId
+    ? (await db.select().from(workShifts).where(eq(workShifts.id, profile.shiftId)).limit(1))[0]
+    : (await db.select().from(workShifts).where(and(eq(workShifts.isDefault, true), eq(workShifts.isActive, true))).limit(1))[0];
+  const actualEnd = shift?.actualEndMinutes ?? BASE_FLEX3_SHIFT.actualEndMinutes;
+  const officialEnd = shift?.endMinutes ?? BASE_FLEX3_SHIFT.endMinutes;
+  const earlyLeaveDeficitMinutes = earlyCheckoutDeficitMinutes({ checkOutAt: input.checkOutAt, actualEndMinutes: actualEnd, endMinutes: officialEnd });
+  await db.update(attendanceRecords).set({ checkOutAt: input.checkOutAt, earlyLeaveDeficitMinutes, updatedAt: new Date() }).where(eq(attendanceRecords.id, existing.id));
+  await logAudit({ actorUserId: input.actorUserId, action: "attendance.checked_out", entityType: "attendance", entityId: existing.id, metadata: { profileId: input.profileId, earlyLeaveDeficitMinutes, checkoutLocalMinutes: saudiLocalMinutes(input.checkOutAt) } });
+  await notifyPlatformOwnerSecurityAlert({ actorUserId: input.actorUserId, action: "attendance.checked_out", entityType: "attendance", entityId: existing.id, details: { profileId: input.profileId, earlyLeaveDeficitMinutes } });
+  return { success: true, attendanceId: existing.id, earlyLeaveDeficitMinutes };
 }
 
 export async function listAttendance(date?: Date) {
@@ -2234,18 +2287,71 @@ export async function submitLeaveRequest(input: { profileId: number; requestType
   const openTasks = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.assigneeProfileId, input.profileId), inArray(tasks.status, ["new", "in_progress", "under_review"])));
   if (openTasks.length && !input.substituteProfileId) throw new Error("يجب اختيار بديل لإسناد المهام المفتوحة قبل تقديم طلب الإجازة.");
   if (input.substituteProfileId === input.profileId) throw new Error("لا يمكن اختيار مقدم الطلب بديلاً لنفسه.");
-  const durationMinutes = Math.ceil((input.endAt.getTime() - input.startAt.getTime()) / 60000);
-  const result = await db.insert(leaveRequests).values({ profileId: input.profileId, requestType: input.requestType, startAt: input.startAt, endAt: input.endAt, durationMinutes, substituteProfileId: input.substituteProfileId ?? null, handoverConfirmed: openTasks.length === 0 || Boolean(input.substituteProfileId), status: "pending", note: input.note ?? null, requestedByUserId: input.requestedByUserId });
+  const existingExcuses = input.requestType === "permission"
+    ? await db.select({ requestType: leaveRequests.requestType, status: leaveRequests.status, startAt: leaveRequests.startAt, endAt: leaveRequests.endAt, durationMinutes: leaveRequests.durationMinutes }).from(leaveRequests).where(eq(leaveRequests.profileId, input.profileId))
+    : [];
+  const policy = evaluateExcusePolicy({ requestType: input.requestType, startAt: input.startAt, endAt: input.endAt, existing: existingExcuses });
+  if (!policy.ok) throw new Error(policy.error);
+  const durationMinutes = policy.durationMinutes;
+  const requiresSecretaryReview = Boolean(policy.escalateToSecretary);
+  const result = await db.insert(leaveRequests).values({ profileId: input.profileId, requestType: input.requestType, startAt: input.startAt, endAt: input.endAt, durationMinutes, substituteProfileId: input.substituteProfileId ?? null, handoverConfirmed: openTasks.length === 0 || Boolean(input.substituteProfileId), requiresSecretaryReview, status: "pending", note: input.note ?? null, requestedByUserId: input.requestedByUserId });
   const id = Number(result[0].insertId);
-  await logAudit({ actorUserId: input.requestedByUserId, action: "leave.submitted", entityType: "leave_request", entityId: id, metadata: { openTaskCount: openTasks.length, substituteProfileId: input.substituteProfileId ?? null } });
+  if (requiresSecretaryReview) {
+    await notifyExcuseEscalation({ profileId: input.profileId, leaveRequestId: id, monthlyCount: policy.monthlyCount, durationMinutes });
+  }
+  await logAudit({ actorUserId: input.requestedByUserId, action: "leave.submitted", entityType: "leave_request", entityId: id, metadata: { openTaskCount: openTasks.length, substituteProfileId: input.substituteProfileId ?? null, requiresSecretaryReview, monthlyCount: policy.monthlyCount ?? null } });
   return id;
 }
 
-export async function reviewLeaveRequest(input: { leaveRequestId: number; decision: "approved" | "rejected"; reviewedByUserId: number }) {
+async function notifyExcuseEscalation(input: { profileId: number; leaveRequestId: number; monthlyCount: number; durationMinutes: number }) {
+  const db = await getDb();
+  if (!db) return;
+  const [employee] = await db.select({ id: personProfiles.id, fullName: personProfiles.fullName, email: personProfiles.email }).from(personProfiles).where(eq(personProfiles.id, input.profileId)).limit(1);
+  const noticeBody = `تجاوز ${employee?.fullName ?? "الموظف"} ثلاثة استئذانات هذا الشهر (الطلب رقم ${input.leaveRequestId}، المدة ${input.durationMinutes} دقيقة، العدد ${input.monthlyCount}). يُحال الطلب لأمين المحكمة للاعتماد أو الرفض.`;
+  await db.insert(notifications).values({
+    profileId: input.profileId,
+    category: "hr_notice",
+    title: "لفت نظر — تكرار الاستئذان",
+    body: noticeBody,
+    dedupeKey: `hr-notice-excuse-${input.profileId}-${input.leaveRequestId}`,
+  }).onDuplicateKeyUpdate({ set: { body: noticeBody } });
+  const secretaries = await db.select({ userId: courtRoleAssignments.userId }).from(courtRoleAssignments).where(and(eq(courtRoleAssignments.role, "court_secretary"), eq(courtRoleAssignments.isActive, true)));
+  for (const secretary of secretaries) {
+    const [profile] = await db.select({ id: personProfiles.id, email: personProfiles.email, fullName: personProfiles.fullName }).from(personProfiles).where(eq(personProfiles.userId, secretary.userId)).limit(1);
+    if (!profile) continue;
+    await db.insert(notifications).values({
+      profileId: profile.id,
+      category: "hr_notice",
+      title: "استئذان محال لأمين المحكمة",
+      body: noticeBody,
+      dedupeKey: `hr-notice-secretary-${profile.id}-${input.leaveRequestId}`,
+    }).onDuplicateKeyUpdate({ set: { body: noticeBody } });
+    if (profile.email && ENV.brevoApiKey && ENV.brevoSenderEmail) {
+      try {
+        await sendBrevoTransactionalEmail({ to: profile.email, recipientName: profile.fullName, subject: "رَكيزة — استئذان محال لاعتماد أمين المحكمة", textContent: noticeBody });
+      } catch {
+        /* قناة البريد اختيارية؛ الإشعار داخل المنصة كافٍ */
+      }
+    }
+  }
+  if (employee?.email && ENV.brevoApiKey && ENV.brevoSenderEmail) {
+    try {
+      await sendBrevoTransactionalEmail({ to: employee.email, recipientName: employee.fullName, subject: "رَكيزة — لفت نظر بشأن تكرار الاستئذان", textContent: noticeBody });
+    } catch {
+      /* ignore optional email failure */
+    }
+  }
+}
+
+export async function reviewLeaveRequest(input: { leaveRequestId: number; decision: "approved" | "rejected"; reviewedByUserId: number; reviewerRoles?: string[] }) {
   const db = await getDb();
   if (!db) throw new Error("قاعدة البيانات غير متاحة");
   const request = (await db.select().from(leaveRequests).where(eq(leaveRequests.id, input.leaveRequestId)).limit(1))[0];
   if (!request || request.status !== "pending") throw new Error("طلب الإجازة غير موجود أو تمت مراجعته.");
+  if (request.requiresSecretaryReview) {
+    const roles = input.reviewerRoles ?? [];
+    if (!roles.includes("court_secretary") && !roles.includes("court_president")) throw new Error("هذا الاستئذان محال لأمين المحكمة؛ الاعتماد أو الرفض متاح للأمين أو رئيس المحكمة فقط.");
+  }
   if (input.decision === "approved" && !request.handoverConfirmed) throw new Error("لا يمكن اعتماد الإجازة قبل تأكيد إسناد المهام.");
   await db.update(leaveRequests).set({ status: input.decision, reviewedByUserId: input.reviewedByUserId, reviewedAt: new Date() }).where(eq(leaveRequests.id, request.id));
   if (input.decision === "approved" && request.substituteProfileId) {

@@ -1487,10 +1487,11 @@ export const courtRouter = router({
       await requireAttendancePolicyAccess(ctx.user);
       return getAttendanceConfirmationConfig();
     }),
-    updateConfirmationConfig: protectedProcedure.input(z.object({ isActive: z.boolean().optional(), targetProfileId: z.number().int().positive().nullable().optional(), audience: z.enum(["employees", "trainees", "judges", "all", "employees,trainees", "employees,judges", "trainees,judges", "employees,trainees,judges"]).optional(), shiftEnabled: z.boolean().optional() }).refine(input => input.isActive !== undefined || input.targetProfileId !== undefined || input.audience !== undefined || input.shiftEnabled !== undefined, "يلزم تحديد تغيير في سياسة الحضور.")).mutation(async ({ ctx, input }) => {
+    updateConfirmationConfig: protectedProcedure.input(z.object({ isActive: z.boolean().optional(), targetProfileId: z.number().int().positive().nullable().optional(), audience: z.enum(["employees", "trainees", "judges", "all", "employees,trainees", "employees,judges", "trainees,judges", "employees,trainees,judges"]).optional(), shiftEnabled: z.boolean().optional(), targetUnitIds: z.array(z.number().int().positive()).nullable().optional() }).refine(input => input.isActive !== undefined || input.targetProfileId !== undefined || input.audience !== undefined || input.shiftEnabled !== undefined || input.targetUnitIds !== undefined, "يلزم تحديد تغيير في سياسة الحضور.")).mutation(async ({ ctx, input }) => {
       const { roles, permission } = await requireAttendancePolicyAccess(ctx.user);
       if (input.targetProfileId !== undefined && !roles.includes("court_president")) throw new TRPCError({ code: "FORBIDDEN", message: "تخصيص موظف معين في تأكيد الحضور متاح للرئيس فقط." });
       if (input.audience !== undefined && !roles.some(role => role === "court_president" || role === "court_secretary") && permission !== "full_control") throw new TRPCError({ code: "FORBIDDEN", message: "تعديل نطاق الحضور عن بُعد متاح للمالك والرئيس والأمين فقط." });
+      if (input.targetUnitIds !== undefined && !roles.some(role => role === "court_president" || role === "court_secretary" || role === "human_resources_manager") && permission !== "full_control") throw new TRPCError({ code: "FORBIDDEN", message: "تخصيص أقسام تأكيد الحضور متاح للمالك والرئيس والأمين والموارد البشرية فقط." });
       if (input.shiftEnabled !== undefined && !roles.some(role => role === "court_secretary" || role === "human_resources_manager") && permission !== "full_control") throw new TRPCError({ code: "FORBIDDEN", message: "إدارة نظام الورديات متاحة للمالك والأمين والموارد البشرية فقط." });
       if (input.isActive === true) {
         const sessionToken = parseCookie(ctx.req.headers.cookie ?? "")[COOKIE_NAME] ?? "";
@@ -1533,8 +1534,8 @@ export const courtRouter = router({
       return { id: await submitLeaveRequest({ ...input, requestedByUserId: ctx.user.id }) };
     }),
     review: protectedProcedure.input(z.object({ leaveRequestId: z.number().int().positive(), decision: z.enum(["approved", "rejected"]) })).mutation(async ({ ctx, input }) => {
-      await requireOperationsManager(ctx.user);
-      await reviewLeaveRequest({ ...input, reviewedByUserId: ctx.user.id });
+      const roles = await requireOperationsManager(ctx.user);
+      await reviewLeaveRequest({ ...input, reviewedByUserId: ctx.user.id, reviewerRoles: roles });
       return { success: true };
     }),
     refreshStatuses: protectedProcedure.mutation(async ({ ctx }) => {
