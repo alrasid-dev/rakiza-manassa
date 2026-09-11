@@ -5,8 +5,20 @@ const state = vi.hoisted(() => ({
   updates: [] as Record<string, unknown>[],
 }));
 
+function selectChain(rows: Record<string, unknown>[] = [{ status: "active" }]) {
+  const chain: Record<string, unknown> = {};
+  chain.from = () => chain;
+  chain.where = () => chain;
+  chain.orderBy = () => chain;
+  chain.groupBy = () => chain;
+  chain.limit = async () => rows;
+  chain.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) => Promise.resolve(rows).then(resolve, reject);
+  return chain;
+}
+
 vi.mock("./db", () => ({
   getDb: vi.fn(async () => ({
+    select: vi.fn(() => selectChain([{ status: "active" }])),
     insert: vi.fn(() => ({
       values: vi.fn(async (values: Record<string, unknown>) => {
         state.inserts.push(values);

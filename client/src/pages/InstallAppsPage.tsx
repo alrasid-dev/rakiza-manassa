@@ -1,3 +1,4 @@
+import React from "react";
 import { Download, MonitorSmartphone, Share, Smartphone, TabletSmartphone } from "lucide-react";
 import { PwaInstallHint } from "@/components/PwaInstallHint";
 import { ANDROID_APK_URL, platformHref } from "@/lib/pwa";

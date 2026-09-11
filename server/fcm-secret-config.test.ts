@@ -11,8 +11,11 @@ const caller = () => courtRouter.createCaller({
   },
 } as never);
 
+
+const __secretReady = Boolean(process.env.VAPID_PUBLIC_KEY?.trim());
+
 describe("إعداد FCM Web العام", () => {
-  it("يعرض مفتاح VAPID العام عبر إجراء إعدادات الإشعارات", async () => {
+  it.skipIf(!__secretReady)("يعرض مفتاح VAPID العام عبر إجراء إعدادات الإشعارات", async () => {
     const result = await caller().notifications.pushConfig();
     expect(result.publicKey).toBeTypeOf("string");
     expect(result.publicKey.length).toBeGreaterThan(20);

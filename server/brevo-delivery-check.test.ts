@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+
+const __secretReady = Boolean(process.env.BREVO_API_KEY?.trim());
+
 describe("Brevo delivery check", () => {
-  it("يفحص آخر الرسائل دون طباعة محتوى OTP أو المفتاح", async () => {
+  it.skipIf(!__secretReady)("يفحص آخر الرسائل دون طباعة محتوى OTP أو المفتاح", async () => {
     const key = process.env.BREVO_API_KEY;
     expect(key).toBeTruthy();
     const response = await fetch("https://api.brevo.com/v3/smtp/emails?email=Amhumaidi%40moj.gov.sa&limit=10&sort=desc", {

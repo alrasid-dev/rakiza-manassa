@@ -11,8 +11,11 @@ function readServiceAccount() {
   return account;
 }
 
+
+const __secretReady = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim());
+
 describe("اعتماد Firebase Admin", () => {
-  it("يقبل الاعتماد من نقطة OAuth الخفيفة دون كشف بيانات المفتاح", async () => {
+  it.skipIf(!__secretReady)("يقبل الاعتماد من نقطة OAuth الخفيفة دون كشف بيانات المفتاح", async () => {
     const account = readServiceAccount();
     const now = Math.floor(Date.now() / 1000);
     const privateKey = await importPKCS8(account.private_key!.replace(/\\n/g, "\n"), "RS256");
@@ -38,7 +41,7 @@ describe("اعتماد Firebase Admin", () => {
     expect(payload.access_token).toMatch(/^ya29\./);
   }, 15000);
 
-  it("يصل إلى Firestore بحساب الخادم دون إنشاء أو تعديل أي مستند", async () => {
+  it.skipIf(!__secretReady)("يصل إلى Firestore بحساب الخادم دون إنشاء أو تعديل أي مستند", async () => {
     const account = readServiceAccount();
     const now = Math.floor(Date.now() / 1000);
     const privateKey = await importPKCS8(account.private_key!.replace(/\\n/g, "\n"), "RS256");
