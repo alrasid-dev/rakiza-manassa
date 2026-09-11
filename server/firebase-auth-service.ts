@@ -2,7 +2,7 @@ import { createHash } from "crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { decodeProtectedHeader, importPKCS8, importX509, jwtVerify, SignJWT } from "jose";
 import { accessGrants, personProfiles, users } from "../drizzle/schema";
-import { findDepartmentAccountByLoginEmail } from "./court-service";
+import { findDepartmentAccountByLoginEmail, isAllowedLoginEmail } from "./court-service";
 import { getDb } from "./db";
 
 type FirebaseServiceAccount = {
@@ -20,11 +20,6 @@ export type FirebaseIdentity = {
 
 let publicKeyCache: { keys: Record<string, string>; expiresAt: number } | null = null;
 let accessTokenCache: { token: string; expiresAt: number } | null = null;
-
-function isAllowedOfficialEmail(email: string) {
-  const normalized = email.trim().toLowerCase();
-  return normalized.endsWith("@moj.gov.sa") || ["rakizaplatform@gmail.com", "abdulaziz.stocks11@gmail.com"].includes(normalized);
-}
 
 function serviceAccount(): FirebaseServiceAccount | null {
   try {
@@ -67,7 +62,7 @@ export async function verifyFirebaseIdToken(idToken: string, options?: { allowUn
   const verified = payload.email_verified === true;
   const signInProvider = (payload.firebase as { sign_in_provider?: string } | undefined)?.sign_in_provider;
   const provider = signInProvider === "google.com" ? "google.com" : signInProvider === "password" ? "password" : "unknown";
-  if (!uid || !email || (!verified && !options?.allowUnverifiedEmail) || !isAllowedOfficialEmail(email)) throw new Error("يلزم بريد رسمي موثق ومسموح به للدخول إلى رَكيزة، أو رمز تفعيل لمرة واحدة بعد إثبات الهوية.");
+  if (!uid || !email || (!verified && !options?.allowUnverifiedEmail) || !isAllowedLoginEmail(email)) throw new Error("يلزم بريد رسمي موثق ومسموح به للدخول إلى رَكيزة، أو رمز تفعيل لمرة واحدة بعد إثبات الهوية.");
   return { uid, email, name, provider };
 }
 
@@ -139,4 +134,17 @@ export async function linkFirebaseIdentity(identity: FirebaseIdentity) {
   const [profile] = await db.select({ id: personProfiles.id }).from(personProfiles).where(eq(personProfiles.userId, user.id)).limit(1);
   await syncIdentityToFirestore(identity, user, profile?.id ?? null);
   return { user, profileId: profile?.id ?? null };
+}
+
+export async function clearMustChangePassword(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ mustChangePassword: false, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
+export async function markAllUsersMustChangePassword() {
+  const db = await getDb();
+  if (!db) return { updated: 0 };
+  const result = await db.update(users).set({ mustChangePassword: true, updatedAt: new Date() });
+  return { updated: Number((result as any)[0]?.affectedRows ?? 0) };
 }

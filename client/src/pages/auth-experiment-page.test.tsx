@@ -13,10 +13,20 @@ afterEach(() => { cleanup(); requestMutateAsync.mockReset(); verifyMutateAsync.m
 vi.mock("@/const", () => ({ startLogin: vi.fn() }));
 vi.mock("@/lib/trpc", () => ({ trpc: { court: { otp: { request: { useMutation: () => ({ mutateAsync: requestMutateAsync, isPending: false }) }, verify: { useMutation: () => ({ mutateAsync: verifyMutateAsync, isPending: false }) } }, passkey: { beginRegistration: { useMutation: () => ({ mutateAsync: passkeyMutateAsync, isPending: false }) }, finishRegistration: { useMutation: () => ({ mutateAsync: passkeyMutateAsync, isPending: false }) }, beginAuthentication: { useMutation: () => ({ mutateAsync: passkeyMutateAsync, isPending: false }) }, finishAuthentication: { useMutation: () => ({ mutateAsync: passkeyMutateAsync, isPending: false }) } } } } }));
 vi.mock("@/components/ui/button", () => ({ Button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => <button {...props}>{children}</button> }));
+vi.mock("@/components/FirebaseAuthPanel", () => ({ FirebaseAuthPanel: () => <div>لوحة كلمة المرور</div> }));
+vi.mock("@/components/PwaInstallHint", () => ({ PwaInstallHint: () => null }));
 
 describe("مختبر OTP وPasskeys", () => {
+  it("يعرض اختصارات المالك والتسجيل والمساعدة أسفل اليسار", () => {
+    render(<AuthExperimentPage />);
+    expect(screen.getByRole("button", { name: /دخول المالك/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /تسجيل موظف جديد/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /الحصول على المساعدة/ })).toBeTruthy();
+  });
+
   it("يعرض إدخال البريد الرسمي ويرفض البريد غير المنتهي بـ moj.gov.sa", () => {
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     expect(screen.getByRole("status").textContent).toContain("moj.gov.sa");
@@ -26,6 +36,7 @@ describe("مختبر OTP وPasskeys", () => {
   it("يرسل طلب OTP الحقيقي وينتقل إلى إدخال الرمز عند نجاح Brevo", async () => {
     requestMutateAsync.mockResolvedValue({ expiresInSeconds: 600, challengeId: 7, recipientCount: 1 });
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@moj.gov.sa" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     await waitFor(() => expect(screen.getByPlaceholderText("000000")).toBeTruthy());
@@ -36,6 +47,7 @@ describe("مختبر OTP وPasskeys", () => {
   it("يظهر عداد إعادة الإرسال ويمنع الطلب الثاني قبل انتهاء المهلة", async () => {
     requestMutateAsync.mockResolvedValue({ expiresInSeconds: 600, challengeId: 7, recipientCount: 1 });
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@moj.gov.sa" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     await waitFor(() => expect(screen.getByPlaceholderText("000000")).toBeTruthy());
@@ -48,6 +60,7 @@ describe("مختبر OTP وPasskeys", () => {
   it("يعيد إرسال OTP بعد انتهاء العداد", async () => {
     requestMutateAsync.mockResolvedValue({ expiresInSeconds: 600, challengeId: 7, recipientCount: 1 });
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@moj.gov.sa" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     await waitFor(() => expect(screen.getByPlaceholderText("000000")).toBeTruthy());
@@ -55,22 +68,26 @@ describe("مختبر OTP وPasskeys", () => {
     expect(requestMutateAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("يبقي جلسة OTP ويعرض تسجيل الجهاز بعد نجاح التحقق", async () => {
+  it("يبقي جلسة OTP وينتقل لتعيين كلمة المرور بعد نجاح التحقق", async () => {
     requestMutateAsync.mockResolvedValue({ expiresInSeconds: 600, challengeId: 7, recipientCount: 1 });
-    verifyMutateAsync.mockResolvedValue({ verified: true });
+    verifyMutateAsync.mockResolvedValue({ verified: true, mustChangePassword: true });
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@moj.gov.sa" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     await waitFor(() => expect(screen.getByPlaceholderText("000000")).toBeTruthy());
     fireEvent.change(screen.getByPlaceholderText("000000"), { target: { value: "123456" } });
     fireEvent.click(screen.getByRole("button", { name: /تحقق من الرمز/ }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /تسجيل هذا الجهاز/ })).toBeTruthy());
-    expect(screen.getByText(/تم الدخول بنجاح/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/لوحة كلمة المرور/)).toBeTruthy();
+      expect(screen.getByRole("status").textContent || "").toMatch(/كلمة مرور|إثبات هويتك|تم الدخول/);
+    });
   });
 
   it("يعرض فشل OTP دون كشف الرمز أو المفتاح", async () => {
     requestMutateAsync.mockRejectedValue(new Error("تعذر إرسال رمز التحقق."));
     render(<AuthExperimentPage />);
+    fireEvent.click(screen.getByRole("button", { name: /رمز OTP/ }));
     fireEvent.change(screen.getByPlaceholderText("name@moj.gov.sa"), { target: { value: "user@moj.gov.sa" } });
     fireEvent.click(screen.getByRole("button", { name: /إرسال رمز تحقق/ }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("تعذر إرسال"));
@@ -79,7 +96,7 @@ describe("مختبر OTP وPasskeys", () => {
 
   it("يعرض تسجيل Passkey وقائمة الأجهزة الفعلية دون بيانات تجريبية", () => {
     render(<AuthExperimentPage />);
-    fireEvent.click(screen.getByRole("button", { name: /مفتاح مرور/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: /مفتاح مرور/ })[0]);
     expect(screen.getByRole("button", { name: /تسجيل هذا الجهاز/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /الدخول بالمفتاح/ })).toBeTruthy();
     expect(screen.getByText(/لا توجد أجهزة محفوظة/)).toBeTruthy();

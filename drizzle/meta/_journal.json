@@ -540,6 +540,13 @@
       "when": 1788300000000,
       "tag": "0076_platform_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1788400000000,
+      "tag": "0077_phase1_auth_roles",
+      "breakpoints": true
     }
   ]
 }

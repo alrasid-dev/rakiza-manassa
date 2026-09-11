@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   consumeActivation: vi.fn(async () => ({ consumed: true as const })),
 }));
 
-vi.mock("./firebase-auth-service", () => ({ verifyFirebaseIdToken: mocks.verify, linkFirebaseIdentity: mocks.link }));
+vi.mock("./firebase-auth-service", () => ({ verifyFirebaseIdToken: mocks.verify, linkFirebaseIdentity: mocks.link, clearMustChangePassword: vi.fn(async () => undefined) }));
 vi.mock("./court-service", async importOriginal => {
   const actual = await importOriginal<typeof import("./court-service")>();
   return { ...actual, issueAuthActivationToken: mocks.issueActivation, consumeAuthActivationToken: mocks.consumeActivation };
@@ -35,7 +35,7 @@ describe("جسر مصادقة Firebase", () => {
 
   it("يتحقق من الرمز ويربط الحساب ثم ينشئ جلسة رَكيزة", async () => {
     const { api, res } = caller();
-    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).resolves.toEqual({ verified: true, provider: "google.com" });
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).resolves.toEqual({ verified: true, provider: "google.com", mustChangePassword: false });
     expect(mocks.verify).toHaveBeenCalledWith("x".repeat(300), { allowUnverifiedEmail: false });
     expect(mocks.link).toHaveBeenCalledWith(expect.objectContaining({ email: "employee@moj.gov.sa" }));
     expect(mocks.createSessionToken).toHaveBeenCalledWith("otp:employee@moj.gov.sa", expect.objectContaining({ name: "موظف اختبار" }));
@@ -44,7 +44,7 @@ describe("جسر مصادقة Firebase", () => {
 
   it("يسمح بالبريد غير المؤكد فقط مع رمز التفعيل وجلسة مطابقة", async () => {
     const { api, res } = caller({ id: 42, email: "employee@moj.gov.sa", openId: "otp:employee@moj.gov.sa", name: "موظف اختبار" });
-    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300), activationToken: "activation-token-12345678901234567890" })).resolves.toEqual({ verified: true, provider: "google.com" });
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300), activationToken: "activation-token-12345678901234567890" })).resolves.toEqual({ verified: true, provider: "google.com", mustChangePassword: false });
     expect(mocks.verify).toHaveBeenCalledWith("x".repeat(300), { allowUnverifiedEmail: true });
     expect(mocks.consumeActivation).toHaveBeenCalledWith({ userId: 42, token: "activation-token-12345678901234567890" });
     expect(res.cookie).toHaveBeenCalled();

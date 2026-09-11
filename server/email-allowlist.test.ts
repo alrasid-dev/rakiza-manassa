@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedLoginEmail, isAllowedRegistrationEmail, isOfficialMojEmail } from "./court-service";
+import { isAllowedLoginEmail, isAllowedRegistrationEmail, isOfficialMojEmail, isPlatformOwnerEmail } from "./court-service";
 
 describe("تحقق البريد الرسمي لرَكيزة", () => {
   it("يقبل بريد moj.gov.sa مع اختلاف حالة الأحرف والمسافات", () => {
@@ -8,16 +8,16 @@ describe("تحقق البريد الرسمي لرَكيزة", () => {
     expect(isAllowedRegistrationEmail("  Employee@MOJ.GOV.SA ")).toBe(true);
   });
 
-  it("يقبل الاستثناءين الفرديين المحددين فقط", () => {
-    for (const email of ["rakizaplatform@gmail.com", "abdulaziz.stocks11@gmail.com"]) {
-      expect(isOfficialMojEmail(email)).toBe(false);
-      expect(isAllowedLoginEmail(email)).toBe(true);
-      expect(isAllowedRegistrationEmail(email)).toBe(true);
-    }
+  it("يقبل بريد مالك المنصة فقط كاستثناء خارج النطاق الرسمي", () => {
+    expect(isOfficialMojEmail("rakizaplatform@gmail.com")).toBe(false);
+    expect(isPlatformOwnerEmail("rakizaplatform@gmail.com")).toBe(true);
+    expect(isAllowedLoginEmail("rakizaplatform@gmail.com")).toBe(true);
+    expect(isAllowedRegistrationEmail("rakizaplatform@gmail.com")).toBe(true);
   });
 
-  it("يرفض Gmail وHotmail وبقية العناوين الشخصية غير المصرح بها", () => {
+  it("يرفض الاستثناء القديم abdulaziz.stocks11@gmail.com وبقية العناوين الشخصية", () => {
     for (const email of [
+      "abdulaziz.stocks11@gmail.com",
       "someone@gmail.com",
       "employee@hotmail.com",
       "rakizaplatform2@gmail.com",

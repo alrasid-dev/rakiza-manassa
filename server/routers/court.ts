@@ -69,6 +69,7 @@ import {
   updateUserEmailSettings,
   isOfficialMojEmail,
   isAllowedLoginEmail,
+  isPlatformOwnerEmail,
   isAllowedRegistrationEmail,
   getSupportTicketDetail,
   getTaskById,
@@ -188,7 +189,7 @@ import { departmentAccounts } from "../../drizzle/schema";
 import { sendPushForNotification } from "../push-service";
 import { deleteInternalMailRule, deleteInternalMailTemplate, getInternalMailFolderCounts, getInternalMailMessage, getInternalMailPreferences, listInternalMail, listInternalMailRecurringSchedules, saveInternalMailDraft, saveInternalMailRule, saveInternalMailTemplate, scheduleInternalMail, scheduleRecurringInternalMail, sendInternalMail, suggestInternalMailAssistant, summarizeInternalMailMessage, updateInternalMailAssistantPreferences, updateInternalMailContact, updateInternalMailEntry, updateInternalMailPreferences, updateInternalMailRecurringSchedule, uploadInternalMailSignatureImage } from "../internal-mail-service";
 import { removeFcmToken, sendFcmToProfile, upsertFcmToken } from "../fcm-service";
-import { linkFirebaseIdentity, verifyFirebaseIdToken } from "../firebase-auth-service";
+import { clearMustChangePassword, linkFirebaseIdentity, verifyFirebaseIdToken } from "../firebase-auth-service";
 import { getDb } from "../db";
 import {
   cancelPermissionDelegation,
@@ -238,9 +239,12 @@ async function requireAttendancePolicyAccess(user: { id: number; role: "user" | 
   return { permission, roles };
 }
 
+function isTruePlatformOwner(user: { email: string | null }) {
+  return isPlatformOwnerEmail(user.email);
+}
+
 async function requirePlatformOwner(user: { id: number; role: "user" | "admin"; email: string | null }) {
-  const permission = await permissionForUser(user);
-  if (permission !== "full_control") throw new TRPCError({ code: "FORBIDDEN", message: "إدارة التسلسل الإداري متاحة لمالك المنصة فقط." });
+  if (!isTruePlatformOwner(user)) throw new TRPCError({ code: "FORBIDDEN", message: "هذا الإجراء متاح لمالك المنصة فقط." });
 }
 
 async function permissionForUser(user: { id: number; role: "user" | "admin"; email: string | null }): Promise<AppPermission> {
@@ -466,7 +470,7 @@ export const courtRouter = router({
       const result = await issueAuthActivationToken({ userId: ctx.user.id });
       return { ...result, message: "رمز التفعيل صالح لمدة 10 دقائق ولمرة واحدة فقط." };
     }),
-    exchange: publicProcedure.input(z.object({ idToken: z.string().min(200).max(20000), activationToken: z.string().min(20).max(200).optional() })).mutation(async ({ ctx, input }) => {
+    exchange: publicProcedure.input(z.object({ idToken: z.string().min(200).max(20000), activationToken: z.string().min(20).max(200).optional(), completePasswordSetup: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
       try {
         const identity = await verifyFirebaseIdToken(input.idToken, { allowUnverifiedEmail: Boolean(input.activationToken) });
         if (input.activationToken) {
@@ -474,12 +478,18 @@ export const courtRouter = router({
           await consumeAuthActivationToken({ userId: ctx.user.id, token: input.activationToken });
         }
         const linked = await linkFirebaseIdentity(identity);
+        if (input.activationToken || input.completePasswordSetup) await clearMustChangePassword(linked.user.id);
         const sessionToken = await sdk.createSessionToken(linked.user.openId, { name: linked.user.name ?? identity.name, expiresInMs: ONE_YEAR_MS });
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
-        return { verified: true as const, provider: identity.provider };
+        const mustChangePassword = Boolean((linked.user as { mustChangePassword?: boolean }).mustChangePassword) && !(input.activationToken || input.completePasswordSetup);
+        return { verified: true as const, provider: identity.provider, mustChangePassword };
       } catch (error) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: error instanceof Error ? error.message : "تعذر ربط مصادقة Firebase بالحساب." });
       }
+    }),
+    completePasswordSetup: protectedProcedure.mutation(async ({ ctx }) => {
+      await clearMustChangePassword(ctx.user.id);
+      return { success: true as const, mustChangePassword: false as const };
     }),
   }),
   otp: router({
@@ -503,7 +513,7 @@ export const courtRouter = router({
       if (!result.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "الحساب غير موجود." });
       const sessionToken = await sdk.createSessionToken(result.user.openId, { name: result.user.name ?? "", expiresInMs: ONE_YEAR_MS });
       ctx.res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
-      return { verified: true as const };
+      return { verified: true as const, mustChangePassword: Boolean((result.user as { mustChangePassword?: boolean }).mustChangePassword) };
     }),
   }),
 
@@ -538,6 +548,7 @@ export const courtRouter = router({
     }),
     review: protectedProcedure.input(z.object({ requestId: z.number().int().positive(), decision: z.enum(["approved", "rejected"]), permission: z.enum(["full_control", "general_view", "employee", "trainee"]).optional(), note: z.string().trim().max(2000).optional() })).mutation(async ({ ctx, input }) => {
       await requirePermission(ctx.user, "manage_access");
+      if (input.permission === "full_control" && !isTruePlatformOwner(ctx.user)) throw new TRPCError({ code: "FORBIDDEN", message: "التفويض البرمجي (تحكم كامل) متاح لمالك المنصة فقط." });
       await reviewRegistrationRequest({ ...input, reviewedByUserId: ctx.user.id });
       return { success: true };
     }),
