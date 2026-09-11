@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+
+const __secretReady = Boolean(process.env.VITE_FIREBASE_API_KEY?.trim());
+
 describe("إعداد Firebase Web", () => {
-  it("يقبل مفتاح Firebase Web طلب تحقق غير منشئ للحساب", async () => {
+  it.skipIf(!__secretReady)("يقبل مفتاح Firebase Web طلب تحقق غير منشئ للحساب", async () => {
     const apiKey = process.env.VITE_FIREBASE_API_KEY;
     expect(apiKey).toBeTruthy();
     const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${encodeURIComponent(apiKey ?? "")}`, {

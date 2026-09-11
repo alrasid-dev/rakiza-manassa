@@ -1,4 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("./_core/env", async importOriginal => {
+  const actual = await importOriginal<typeof import("./_core/env")>();
+  return {
+    ...actual,
+    ENV: {
+      ...actual.ENV,
+      brevoApiKey: "xkeysib-test-fake-key",
+      brevoSenderEmail: "noreply@example.com",
+    },
+  };
+});
+
 import { sendBrevoTransactionalEmail } from "./court-service";
 
 const originalFetch = globalThis.fetch;

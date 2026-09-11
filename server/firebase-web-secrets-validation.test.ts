@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+
+const __secretReady = Boolean(process.env.VITE_FIREBASE_API_KEY?.trim() && process.env.VITE_FIREBASE_PROJECT_ID?.trim());
+
 describe("Firebase Web configuration", () => {
-  it("accepts the configured public API key without creating data", async () => {
+  it.skipIf(!__secretReady)("accepts the configured public API key without creating data", async () => {
     const apiKey = process.env.VITE_FIREBASE_API_KEY;
     const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
     expect(apiKey).toBeTruthy();

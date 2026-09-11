@@ -3,11 +3,18 @@ import { describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   profile: { id: 12, fullName: "ملازم مختبر", personType: "trainee" },
   listScoreEventsForProfile: vi.fn(async () => [{ event: { id: 1, points: 7, reason: "معالجة مهمة", createdAt: new Date("2026-08-14T06:00:00Z") }, createdByName: "النظام" }, { event: { id: 2, points: -2, reason: "تأخر", createdAt: new Date("2026-08-13T06:00:00Z") }, createdByName: "مدير" }]),
+  listOperationalReportsForProfile: vi.fn(async () => []),
 }));
 
 vi.mock("./court-service", async importOriginal => {
   const actual = await importOriginal<typeof import("./court-service")>();
-  return { ...actual, getAccessPermission: vi.fn(async () => "trainee"), getProfileForUser: vi.fn(async () => mocks.profile), listScoreEventsForProfile: mocks.listScoreEventsForProfile };
+  return {
+    ...actual,
+    getAccessPermission: vi.fn(async () => "trainee"),
+    getProfileForUser: vi.fn(async () => mocks.profile),
+    listScoreEventsForProfile: mocks.listScoreEventsForProfile,
+    listOperationalReportsForProfile: mocks.listOperationalReportsForProfile,
+  };
 });
 
 import { courtRouter } from "./routers/court";

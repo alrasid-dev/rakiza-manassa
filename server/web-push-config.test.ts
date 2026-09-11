@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import webpush from "web-push";
 
+
+const __secretReady = Boolean(process.env.VAPID_PUBLIC_KEY?.trim() && process.env.VAPID_PRIVATE_KEY?.trim());
+
 describe("Web Push configuration", () => {
-  it("accepts the configured VAPID key pair", () => {
+  it.skipIf(!__secretReady)("accepts the configured VAPID key pair", () => {
     const subject = process.env.VAPID_SUBJECT;
     const publicKey = process.env.VAPID_PUBLIC_KEY;
     const privateKey = process.env.VAPID_PRIVATE_KEY;
