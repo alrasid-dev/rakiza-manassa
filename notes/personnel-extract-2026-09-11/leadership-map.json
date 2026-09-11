@@ -1,0 +1,91 @@
+{
+  "sourceFiles": {
+    "employees": "نموذجعرضبياناتالموظفينللمواردالبشرية-تفاعليداخلي.xlsx (164 records sheet الكل)",
+    "trainees": "تشكيلدوائرمخصصة… (51 trainees)",
+    "judges": "قضاة/تشكيل (40 judges)"
+  },
+  "leadershipFromUserPlanMatchedToWorkbook": [
+    {
+      "role": "المالك",
+      "roleKey": null,
+      "name": "مالك المنصة",
+      "email": "rakizaplatform@gmail.com",
+      "source": "PLATFORM_OWNER_EMAIL / specs",
+      "workbookJobTitle": null,
+      "workbookDept": null,
+      "permission": "full_control",
+      "note": "Exclusive Admin/Developer; sole authority for programmatic delegation"
+    },
+    {
+      "role": "رئيس المحكمة",
+      "roleKey": "court_president",
+      "name": "سعد ناصر عبدالعزيز الصويغ",
+      "email": "snaswig@moj.gov.sa",
+      "source": "user confirmed 2026-09-11",
+      "workbookJobTitle": null,
+      "workbookDept": null,
+      "needsConfirm": false,
+      "permission": "general_view"
+    },
+    {
+      "role": "الرئيس المساعد",
+      "roleKey": "assistant_president",
+      "name": "حاتم محمد عبدالله الفالح",
+      "email": "hfaleh@moj.gov.sa",
+      "source": "judges workbook + user confirmed",
+      "workbookJobTitle": "قاضٍ / تشكيل ٢٨",
+      "workbookDept": "أصحاب الفضيلة",
+      "needsConfirm": false,
+      "permission": "general_view"
+    },
+    {
+      "role": "أمين المحكمة",
+      "roleKey": "court_secretary",
+      "name": "عبدالله شباب سليمان العتيبي",
+      "email": "abssotaibi@moj.gov.sa",
+      "source": "employees workbook + user confirmed",
+      "workbookJobTitle": "مساعد إداري متقدم",
+      "workbookDept": "أمانة المحكمة",
+      "note": "مكلف من خارج المحكمة",
+      "permission": "general_view"
+    },
+    {
+      "role": "مدير مكتب الرئيس",
+      "roleKey": "department_manager",
+      "name": "بندر حمد عبدالعزيز الصالح",
+      "email": "bhabdaziz@moj.gov.sa",
+      "source": "employees workbook + user confirmed",
+      "workbookJobTitle": "مساعد إداري متقدم أول",
+      "workbookDept": "مكتب فضيلة رئيس المحكمة",
+      "permission": "employee"
+    },
+    {
+      "role": "موظف مكتب الرئيس",
+      "roleKey": "administrative_staff",
+      "name": "سعد حسن عبدالرحمن السميح",
+      "email": "shsamaih@moj.gov.sa",
+      "source": "employees workbook + user confirmed",
+      "workbookJobTitle": "أخصائي بحث ديني",
+      "workbookDept": "مكتب فضيلة رئيس المحكمة",
+      "needsConfirm": false,
+      "note": "STAYS in مكتب فضيلة رئيس المحكمة — do NOT invent مدير المكتب السري reassignment",
+      "permission": "employee"
+    },
+    {
+      "role": "مدير قسم تسليم الأحكام",
+      "roleKey": "department_manager",
+      "name": "عبدالعزيز محمد بن عبدالعزيز الحميدي",
+      "email": "amhumaidi@moj.gov.sa",
+      "source": "employees workbook + user confirmed",
+      "workbookJobTitle": "أخصائي بحث ديني",
+      "workbookDept": "تسليم الاحكام",
+      "permission": "employee"
+    }
+  ],
+  "counts": {
+    "employees": 164,
+    "traineesApprox": 51,
+    "judges": 40
+  },
+  "updatedAt": "2026-09-11"
+}

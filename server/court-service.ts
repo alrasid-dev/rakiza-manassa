@@ -17,19 +17,15 @@ export async function sendBrevoTransactionalEmail(input: { to: string; recipient
 }
 
 export const OFFICIAL_MOJ_EMAIL = /^[^@\s]+@moj\.gov\.sa$/i;
-const PERSONAL_LOGIN_EMAIL_EXCEPTIONS = new Set([
-  "rakizaplatform@gmail.com",
-  "abdulaziz.stocks11@gmail.com",
-]);
+/** الوحيد المسموح خارج @moj.gov.sa هو بريد مالك المنصة المهيأ عبر PLATFORM_OWNER_EMAIL. */
 export const isOfficialMojEmail = (value: string | null | undefined) => Boolean(value && OFFICIAL_MOJ_EMAIL.test(value.trim()));
+export const isPlatformOwnerEmail = (value: string | null | undefined) => {
+  const normalized = value?.trim().toLowerCase();
+  return Boolean(normalized && normalized === ENV.platformOwnerEmail);
+};
 export const isAllowedLoginEmail = (value: string | null | undefined) => {
   const normalized = value?.trim().toLowerCase();
-  return Boolean(
-    normalized &&
-      (isOfficialMojEmail(normalized) ||
-        normalized === ENV.platformOwnerEmail ||
-        PERSONAL_LOGIN_EMAIL_EXCEPTIONS.has(normalized)),
-  );
+  return Boolean(normalized && (isOfficialMojEmail(normalized) || isPlatformOwnerEmail(normalized)));
 };
 export const isAllowedRegistrationEmail = isAllowedLoginEmail;
 import {

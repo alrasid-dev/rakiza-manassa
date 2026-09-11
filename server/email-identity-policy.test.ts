@@ -23,11 +23,10 @@ describe("هوية البريد الرسمي وقنوات التنبيه", () =>
     mocks.rows = [{ id: 7, officialEmail: "employee@moj.gov.sa", backupEmail: "employee@example.com", backupEmailVerifiedAt: new Date() }];
     await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@example.com"]);
   });
-  it("يسمح لقناة OTP ببريدي المالكين المحددين فقط", async () => {
+  it("يسمح لقناة OTP ببريد المالك المهيأ فقط خارج النطاق الرسمي", async () => {
     mocks.rows = [{ id: 1, officialEmail: "rakizaplatform@gmail.com", backupEmail: null, backupEmailVerifiedAt: null }];
     await expect(getNotificationEmailRecipients(1)).resolves.toEqual(["rakizaplatform@gmail.com"]);
-    mocks.rows = [{ id: 2, officialEmail: "abdulaziz.stocks11@gmail.com", backupEmail: null, backupEmailVerifiedAt: null }];
-    await expect(getNotificationEmailRecipients(2)).resolves.toEqual(["abdulaziz.stocks11@gmail.com"]);
+    expect(isAllowedLoginEmail("abdulaziz.stocks11@gmail.com")).toBe(false);
   });
   it("لا يعيد أي قناة إذا لم يثبت البريد الرسمي أو كان شخصياً غير مصرح", async () => {
     mocks.rows = [{ id: 7, officialEmail: "employee@gmail.com", backupEmail: "employee@example.com", backupEmailVerifiedAt: new Date() }];
