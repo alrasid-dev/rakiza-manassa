@@ -12,7 +12,7 @@ const state = vi.hoisted(() => ({
   taskStatus: "new",
 }));
 
-vi.mock("@/components/DashboardLayout", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
+vi.mock("@/components/DashboardLayout", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main>, oliveIconMotionClass: "rakiza-olive-icon" }));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     court: {

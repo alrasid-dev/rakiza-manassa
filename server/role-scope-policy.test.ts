@@ -64,7 +64,7 @@ describe("سياسة نطاق الأدوار الجديدة", () => {
   });
 
   it("يحصر وحدات المنصة وإضافة البرمجيات في المالك", async () => {
-    const owner = caller({ id: 1, role: "admin", email: "owner@court.example" });
+    const owner = caller({ id: 1, role: "admin", email: "rakizaplatform@gmail.com" });
     await expect(owner.modules.list()).resolves.toEqual([{ id: 7, moduleKey: "future-module", label: "وحدة مستقبلية" }]);
     await expect(owner.modules.create({ moduleKey: "future-module-2", label: "وحدة", path: "/future", iconKey: "Boxes", moduleType: "software", audience: ["full_control"], sortOrder: 1 })).resolves.toEqual({ id: 8 });
     await expect(caller({ id: 13, role: "user", email: "employee@court.example" }).modules.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
