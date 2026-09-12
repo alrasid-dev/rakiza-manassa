@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ permission: "full_control" as "full_control" | "employee", updateCalls: [] as Record<string, unknown>[], listError: null as { message: string } | null }));
 const profileData = [{ id: 11, fullName: "موظف مختبر", email: "staff@court.example", employeeNumber: "A-01", personType: "administrative", jobTitle: "باحث", judicialFormation: null, attendanceMode: "in_person", status: "active" }, { id: 12, fullName: "ملازم مختبر", email: "trainee@court.example", employeeNumber: "T-01", personType: "trainee", jobTitle: "ملازم قضائي", judicialFormation: "الدائرة الأولى", attendanceMode: "mixed", status: "active" }, { id: 13, fullName: "قاضٍ منفصل", email: null, employeeNumber: null, personType: "judge", jobTitle: "قاضٍ", judicialFormation: "الدائرة الثانية", attendanceMode: "in_person", status: "active" }];
 
+vi.mock("wouter", () => ({ Link: ({ href, children, ...props }: { href: string; children: ReactNode; className?: string }) => <a href={href} {...props}>{children}</a>, useLocation: () => ["/people", vi.fn()] }));
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ open, children }: { open: boolean; children: ReactNode }) => open ? <div>{children}</div> : null,
   DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>, DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>, DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>, DialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>, DialogFooter: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -17,6 +18,7 @@ vi.mock("@/lib/trpc", () => ({
     court: {
       registration: { myPermission: { useQuery: () => ({ data: state.permission, isLoading: false, error: null }) } },
       myRoles: { useQuery: () => ({ data: [] }) },
+      units: { list: { useQuery: () => ({ data: [{ id: 1, name: "قسم الاختبار" }], isLoading: false, error: null }) } },
       people: {
         list: { useQuery: () => ({ data: profileData, isLoading: false, error: state.listError }) },
         create: { useMutation: () => ({ isPending: false, error: null, mutate: vi.fn() }) },
