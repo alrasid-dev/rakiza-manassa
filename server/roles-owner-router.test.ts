@@ -14,7 +14,7 @@ import { courtRouter } from "./routers/court";
 
 describe("إدارة أدوار القيادة", () => {
   it("تسمح للمالك بمنح دور الرئيس المساعد وسحبه مع تسجيل المنفذ", async () => {
-    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "owner@court.example", name: "المالك", openId: "owner" } } as never);
+    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "rakizaplatform@gmail.com", name: "المالك", openId: "owner" } } as never);
     await expect(owner.roles.assign({ userId: 9, role: "assistant_president" })).resolves.toEqual({ id: 47 });
     expect(mocks.assignCourtRole).toHaveBeenCalledWith({ userId: 9, role: "assistant_president", delegatedByUserId: 1 });
 

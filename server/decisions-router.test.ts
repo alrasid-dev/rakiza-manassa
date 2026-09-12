@@ -30,7 +30,7 @@ describe("court.decisions", () => {
   });
 
   it("يحصر الإنشاء والنشر بمالك المنصة ويسجل القراءة للمستخدم الحالي", async () => {
-    const caller = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "owner@court.example", name: "مالك", openId: "owner" } } as never);
+    const caller = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "rakizaplatform@gmail.com", name: "مالك", openId: "owner" } } as never);
     await expect(caller.decisions.create({ kind: "circular", title: "تعميم اختباري", body: "محتوى التعميم" })).resolves.toEqual({ id: 7 });
     await expect(caller.decisions.publish({ id: 7 })).resolves.toEqual({ success: true });
     await expect(caller.decisions.markRead({ decisionId: 7 })).resolves.toEqual({ success: true });

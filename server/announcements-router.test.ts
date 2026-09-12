@@ -7,14 +7,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./court-service", async importOriginal => {
   const actual = await importOriginal<typeof import("./court-service")>();
-  return { ...actual, listVisibleAnnouncements: mocks.listVisibleAnnouncements, createAnnouncement: mocks.createAnnouncement, getAccessPermission: vi.fn(async (email: string | null) => email === "owner@court.example" ? "full_control" : null), getProfileForUser: vi.fn(async () => ({ id: 7, unitId: 4 })) };
+  return { ...actual, listVisibleAnnouncements: mocks.listVisibleAnnouncements, createAnnouncement: mocks.createAnnouncement, getAccessPermission: vi.fn(async (email: string | null) => email === "rakizaplatform@gmail.com" ? "full_control" : null), getProfileForUser: vi.fn(async () => ({ id: 7, unitId: 4 })) };
 });
 
 import { courtRouter } from "./routers/court";
 
 describe("مركز الإعلانات الداخلية", () => {
   it("يعرض الإعلانات من خلال خدمة النطاق وينشر المالك إعلاناً عاماً", async () => {
-    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "owner@court.example", name: "المالك", openId: "owner" } } as never);
+    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "rakizaplatform@gmail.com", name: "المالك", openId: "owner" } } as never);
     await expect(owner.announcements.list()).resolves.toEqual([expect.objectContaining({ id: 31, title: "إعلان عام" })]);
     expect(mocks.listVisibleAnnouncements).toHaveBeenCalledWith({ unitId: 4, isLeadership: true });
     await expect(owner.announcements.create({ title: "تنبيه داخلي", body: "هذا إعلان تشغيلي", visibility: "all" })).resolves.toEqual({ id: 31 });
