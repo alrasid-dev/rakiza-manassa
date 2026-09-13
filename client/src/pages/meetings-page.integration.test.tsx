@@ -3,7 +3,9 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React, { type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ minutesCalls: [] as Record<string, unknown>[], attendanceCalls: [] as Record<string, unknown>[] }));
+const state = vi.hoisted(() => ({ minutesCalls: [] as Record<string, unknown>[], attendanceCalls: [] as Record<string, unknown>[], taskCalls: [] as Record<string, unknown>[] }));
+
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const meeting = { id: 7, title: "اجتماع القسم", scheduledAt: "2026-08-20T07:00:00Z", location: "قاعة 1", status: "scheduled", agenda: "بنود النقاش", minutes: null as string | null, recommendations: null as string | null };
 
@@ -20,6 +22,7 @@ vi.mock("@/lib/trpc", () => ({
         minutes: { useMutation: () => ({ mutate: (input: Record<string, unknown>) => state.minutesCalls.push(input), isPending: false }) },
         attendees: { useQuery: () => ({ data: [{ id: 55, meetingId: 7, profileId: 1, attendanceStatus: "invited" }], refetch: vi.fn() }) },
         updateAttendance: { useMutation: () => ({ mutate: (input: Record<string, unknown>) => state.attendanceCalls.push(input), isPending: false }) },
+        recommendationsToTasks: { useMutation: () => ({ mutate: (input: Record<string, unknown>) => state.taskCalls.push(input), isPending: false }) },
       },
       people: { list: { useQuery: () => ({ data: [{ id: 1, fullName: "موظف مختبر" }] }) } },
     },
@@ -28,7 +31,7 @@ vi.mock("@/lib/trpc", () => ({
 
 import { MeetingsPage } from "./MeetingsPage";
 
-beforeEach(() => { state.minutesCalls.length = 0; state.attendanceCalls.length = 0; });
+beforeEach(() => { state.minutesCalls.length = 0; state.attendanceCalls.length = 0; state.taskCalls.length = 0; });
 afterEach(() => cleanup());
 
 describe("صفحة الاجتماعات", () => {
@@ -55,5 +58,15 @@ describe("صفحة الاجتماعات", () => {
     const statusSelect = screen.getByLabelText("حالة حضور موظف مختبر");
     fireEvent.change(statusSelect, { target: { value: "attended" } });
     expect(state.attendanceCalls).toEqual([{ attendeeId: 55, attendanceStatus: "attended" }]);
+  });
+
+  it("تحوّل التوصيات إلى مهام موزعة بمواعيد الجدولة والاستحقاق", () => {
+    render(<MeetingsPage />);
+    fireEvent.change(screen.getByLabelText("توصيات اجتماع اجتماع القسم"), { target: { value: "بند أول\nبند ثانٍ" } });
+    fireEvent.change(screen.getByLabelText("تاريخ جدولة مهام اجتماع القسم"), { target: { value: "2026-08-21T08:00" } });
+    fireEvent.change(screen.getByLabelText("تاريخ استحقاق مهام اجتماع القسم"), { target: { value: "2026-08-25T14:00" } });
+    fireEvent.click(screen.getByRole("button", { name: "تحويل التوصيات إلى مهام" }));
+    expect(state.taskCalls).toHaveLength(1);
+    expect(state.taskCalls[0]).toMatchObject({ meetingId: 7, recommendations: "بند أول\nبند ثانٍ" });
   });
 });
