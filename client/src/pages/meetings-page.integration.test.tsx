@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import React, { type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ minutesCalls: [] as Record<string, unknown>[] }));
+const state = vi.hoisted(() => ({ minutesCalls: [] as Record<string, unknown>[], attendanceCalls: [] as Record<string, unknown>[] }));
 
 const meeting = { id: 7, title: "اجتماع القسم", scheduledAt: "2026-08-20T07:00:00Z", location: "قاعة 1", status: "scheduled", agenda: "بنود النقاش", minutes: null as string | null, recommendations: null as string | null };
 
@@ -18,6 +18,8 @@ vi.mock("@/lib/trpc", () => ({
         create: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
         invite: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
         minutes: { useMutation: () => ({ mutate: (input: Record<string, unknown>) => state.minutesCalls.push(input), isPending: false }) },
+        attendees: { useQuery: () => ({ data: [{ id: 55, meetingId: 7, profileId: 1, attendanceStatus: "invited" }], refetch: vi.fn() }) },
+        updateAttendance: { useMutation: () => ({ mutate: (input: Record<string, unknown>) => state.attendanceCalls.push(input), isPending: false }) },
       },
       people: { list: { useQuery: () => ({ data: [{ id: 1, fullName: "موظف مختبر" }] }) } },
     },
@@ -26,7 +28,7 @@ vi.mock("@/lib/trpc", () => ({
 
 import { MeetingsPage } from "./MeetingsPage";
 
-beforeEach(() => { state.minutesCalls.length = 0; });
+beforeEach(() => { state.minutesCalls.length = 0; state.attendanceCalls.length = 0; });
 afterEach(() => cleanup());
 
 describe("صفحة الاجتماعات", () => {
@@ -46,5 +48,12 @@ describe("صفحة الاجتماعات", () => {
     fireEvent.change(screen.getByLabelText("محضر اجتماع اجتماع القسم"), { target: { value: "محضر بلا توصيات" } });
     fireEvent.click(screen.getByRole("button", { name: "حفظ المحضر والتوصيات" }));
     expect(state.minutesCalls).toEqual([{ meetingId: 7, minutes: "محضر بلا توصيات", recommendations: undefined }]);
+  });
+
+  it("توثّق حضور المدعوين وترسل تحديث الحالة", () => {
+    render(<MeetingsPage />);
+    const statusSelect = screen.getByLabelText("حالة حضور موظف مختبر");
+    fireEvent.change(statusSelect, { target: { value: "attended" } });
+    expect(state.attendanceCalls).toEqual([{ attendeeId: 55, attendanceStatus: "attended" }]);
   });
 });
