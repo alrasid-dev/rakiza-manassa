@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import React, { type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { saveDraftMutate, updateAssistantPreferencesMutate, saveTemplateMutate, toastError } = vi.hoisted(() => ({ saveDraftMutate: vi.fn(), updateAssistantPreferencesMutate: vi.fn(), saveTemplateMutate: vi.fn(), toastError: vi.fn() }));
+const { saveDraftMutate, updateAssistantPreferencesMutate, saveTemplateMutate, deleteTemplateMutate, toastError } = vi.hoisted(() => ({ saveDraftMutate: vi.fn(), updateAssistantPreferencesMutate: vi.fn(), saveTemplateMutate: vi.fn(), deleteTemplateMutate: vi.fn(), toastError: vi.fn() }));
 
 vi.mock("@/components/DashboardLayout", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
 vi.mock("@/components/RichTextMailEditor", () => ({ default: ({ value = "", onChange }: { value?: string; onChange: (html: string, text: string) => void }) => <textarea aria-label="محتوى الرسالة المنسق" value={value} onChange={event => onChange(`<p>${event.target.value}</p>`, event.target.value)} /> }));
@@ -25,6 +25,7 @@ vi.mock("@/lib/trpc", () => ({
         saveRule: { useMutation: () => ({ mutate: vi.fn() }) },
         deleteRule: { useMutation: () => ({ mutate: vi.fn() }) },
         saveTemplate: { useMutation: () => ({ mutate: saveTemplateMutate, isPending: false }) },
+        deleteTemplate: { useMutation: () => ({ mutate: deleteTemplateMutate, isPending: false }) },
         assistant: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
         schedule: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
         recurringSchedules: { useQuery: () => ({ data: [], isLoading: false, refetch: vi.fn() }) },
@@ -42,7 +43,7 @@ vi.mock("@/lib/trpc", () => ({
 
 import RakizaMailPage from "./RakizaMailPage";
 
-afterEach(() => { cleanup(); saveDraftMutate.mockReset(); updateAssistantPreferencesMutate.mockReset(); saveTemplateMutate.mockReset(); toastError.mockReset(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); saveDraftMutate.mockReset(); updateAssistantPreferencesMutate.mockReset(); saveTemplateMutate.mockReset(); deleteTemplateMutate.mockReset(); toastError.mockReset(); vi.useRealTimers(); });
 
 describe("بريد ركيزة", () => {
   it("يعرض البريد الوارد ويفتح محرر رسالة داخلية جديدة", () => {
@@ -108,6 +109,17 @@ describe("بريد ركيزة", () => {
     expect((screen.getAllByPlaceholderText("الموضوع").at(-1) as HTMLInputElement).value).toBe("محضر متابعة");
     expect((screen.getByRole("textbox", { name: "محتوى الرسالة المنسق" }) as HTMLTextAreaElement).value).toContain("يرجى مراجعة البنود المرفقة.");
     expect(screen.getByText("مستلم 33")).toBeTruthy();
+  });
+
+  it("يحذف القالب المختار عبر زر حذف القالب", () => {
+    render(<RakizaMailPage />);
+    fireEvent.click(screen.getAllByText("رسالة جديدة")[0]);
+    const deleteButton = screen.getByRole("button", { name: "حذف القالب" }) as HTMLButtonElement;
+    expect(deleteButton.disabled).toBe(true);
+    fireEvent.change(screen.getByLabelText("اختيار قالب رسالة"), { target: { value: "51" } });
+    expect(deleteButton.disabled).toBe(false);
+    fireEvent.click(deleteButton);
+    expect(deleteTemplateMutate).toHaveBeenCalledWith({ id: 51 });
   });
 
   it("لا يحفظ الرد التلقائي قبل التأكيد الصريح من صاحب البريد", () => {
