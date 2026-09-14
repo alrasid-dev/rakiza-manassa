@@ -43,6 +43,12 @@ function runTypeCheck() {
   return { ok: result.status === 0, output: `${result.stdout ?? ""}\n${result.stderr ?? ""}` };
 }
 
+function runBuild() {
+  note("بناء الإنتاج (التحقق من قابلية النشر)…");
+  const result = shell("pnpm run vercel-build");
+  return { ok: result.status === 0, output: `${result.stdout ?? ""}\n${result.stderr ?? ""}` };
+}
+
 function runTests(targets = []) {
   note(targets.length ? `تشغيل الاختبارات على ${targets.length} ملفاً…` : "تشغيل المجموعة الكاملة…");
   const targetArgs = targets.map(target => `"${target}"`).join(" ");
@@ -204,9 +210,10 @@ function revert(files) {
   shell(`git checkout -- ${list}`);
 }
 
-function summarize(typeCheck, tests) {
+function summarize(typeCheck, tests, build) {
   note("──────── ملخص المعالجة الذاتية ────────");
   note(`فحص الأنواع: ${typeCheck.ok ? "ناجح" : "فاشل"}`);
+  note(`بناء الإنتاج: ${build.ok ? "ناجح" : "فاشل"}`);
   note(`الاختبارات: ${tests.ok ? "ناجحة بالكامل" : `فشل في ${tests.failedFiles.length} ملفاً`}`);
   if (report.flaky.length) note(`فشل عابر نجح بإعادة التشغيل: ${report.flaky.join(", ")}`);
   if (report.appliedFixes.length) note(`إصلاحات مطبَّقة: ${report.appliedFixes.map(fix => fix.healer).join(", ")}`);
@@ -218,9 +225,11 @@ function summarize(typeCheck, tests) {
 function main() {
   note("بدء المعالجة الذاتية…");
   const firstCheck = runTypeCheck();
+  const firstBuild = runBuild();
   let tests = runTests();
 
   if (!firstCheck.ok) report.appliedFixes.push({ healer: "type-check", description: "فشل فحص الأنواع ويحتاج مراجعة بشرية", round: 0 });
+  if (!firstBuild.ok) report.appliedFixes.push({ healer: "production-build", description: "فشل بناء الإنتاج ويحتاج مراجعة بشرية", round: 0 });
 
   for (let round = 1; round <= MAX_ROUNDS && !tests.ok; round += 1) {
     const roundInfo = { round, failedFiles: tests.failedFiles.map(relative), applied: [], outcome: "unknown" };
@@ -282,7 +291,8 @@ function main() {
   // التحقق النهائي: دائماً على المجموعة الكاملة، مع معالجة الفشل الهشّ تلقائياً بإعادة الفحص.
   let finalCheck = runTypeCheck();
   let finalTests = runTests();
-  for (let attempt = 1; attempt <= 2 && !(finalCheck.ok && finalTests.ok); attempt += 1) {
+  let finalBuild = runBuild();
+  for (let attempt = 1; attempt <= 2 && !(finalCheck.ok && finalTests.ok && finalBuild.ok); attempt += 1) {
     if (!finalTests.failedFiles.length) break;
     note(`التحقق النهائي: إعادة تشغيل الملفات الفاشلة للتحقق من الفشل الهشّ (محاولة ${attempt})…`);
     const retry = runTests(finalTests.failedFiles.map(relative));
@@ -290,13 +300,15 @@ function main() {
     report.flaky.push(...finalTests.failedFiles.map(relative));
     finalCheck = runTypeCheck();
     finalTests = runTests();
+    finalBuild = runBuild();
   }
-  const ok = finalCheck.ok && finalTests.ok;
+  const ok = finalCheck.ok && finalTests.ok && finalBuild.ok;
+  report.build = finalBuild.ok ? "success" : "failed";
   report.final = ok ? "success" : "failed";
   report.unhealed = finalTests.failedFiles.map(relative);
   report.finishedAt = new Date().toISOString();
   writeReport();
-  summarize(finalCheck, finalTests);
+  summarize(finalCheck, finalTests, finalBuild);
   if (ok) note("النتيجة: المنصة اجتازت الفحص بنسبة 100%.");
   else note("النتيجة: توجد أعطال تحتاج تدخلاً — راجع التقرير.");
   process.exit(ok ? 0 : 1);
