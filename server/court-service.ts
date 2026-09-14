@@ -1278,7 +1278,12 @@ export async function getNotificationEmailRecipients(userId: number): Promise<st
   const officialEmail = settings?.officialEmail?.trim().toLowerCase() ?? null;
   if (!settings || !officialEmail || !isAllowedLoginEmail(officialEmail)) return [];
   const notificationEmail = settings.backupEmail?.trim().toLowerCase();
-  return notificationEmail && settings.backupEmailVerifiedAt ? [notificationEmail] : [officialEmail];
+  const verifiedNotificationEmail = notificationEmail && settings.backupEmailVerifiedAt ? notificationEmail : null;
+  // تفضيل غير محدد يعني صفاً قديماً قبل تهيئة التفضيل، فيُحفظ السلوك السابق: البريد الإضافي الموثّق يتقدّم.
+  const preference = settings.emailNotificationPreference;
+  if (preference === "work") return [officialEmail];
+  if (preference === "both") return verifiedNotificationEmail ? [officialEmail, verifiedNotificationEmail] : [officialEmail];
+  return verifiedNotificationEmail ? [verifiedNotificationEmail] : [officialEmail];
 }
 
 export async function updateUserEmailSettings(input: { userId: number; backupEmail?: string | null; emailNotificationPreference?: "work" | "backup" | "both" }) {
@@ -1294,10 +1299,11 @@ export async function updateUserEmailSettings(input: { userId: number; backupEma
     const duplicate = await db.select({ id: users.id }).from(users).where(and(eq(users.backupEmail, backupEmail), ne(users.id, input.userId))).limit(1);
     if (duplicate[0]) throw new Error("هذا البريد الاحتياطي مرتبط بحساب آخر.");
   }
-  if ((input.emailNotificationPreference === "backup" || input.emailNotificationPreference === "both") && !backupEmail) throw new Error("أضف بريداً احتياطياً قبل اختياره لاستقبال التنبيهات.");
-  await db.update(users).set({ backupEmail, backupEmailVerifiedAt: backupEmail === current.backupEmail ? current.backupEmailVerifiedAt : null, emailNotificationPreference: input.emailNotificationPreference ?? "backup", updatedAt: new Date() }).where(eq(users.id, input.userId));
-  await logAudit({ actorUserId: input.userId, action: "user.email_notification_settings.updated", entityType: "user", entityId: input.userId, metadata: { hasNotificationEmail: Boolean(backupEmail), verificationReset: backupEmail !== current.backupEmail } });
-  return { backupEmail, backupEmailVerifiedAt: backupEmail === current.backupEmail ? current.backupEmailVerifiedAt : null, emailNotificationPreference: input.emailNotificationPreference ?? "backup" };
+  const preference = input.emailNotificationPreference ?? current.emailNotificationPreference ?? "backup";
+  if ((preference === "backup" || preference === "both") && !backupEmail) throw new Error("أضف بريداً احتياطياً قبل اختياره لاستقبال التنبيهات.");
+  await db.update(users).set({ backupEmail, backupEmailVerifiedAt: backupEmail === current.backupEmail ? current.backupEmailVerifiedAt : null, emailNotificationPreference: preference, updatedAt: new Date() }).where(eq(users.id, input.userId));
+  await logAudit({ actorUserId: input.userId, action: "user.email_notification_settings.updated", entityType: "user", entityId: input.userId, metadata: { hasNotificationEmail: Boolean(backupEmail), notificationPreference: preference, verificationReset: backupEmail !== current.backupEmail } });
+  return { backupEmail, backupEmailVerifiedAt: backupEmail === current.backupEmail ? current.backupEmailVerifiedAt : null, emailNotificationPreference: preference };
 }
 
 export function validateRecoveryEmailPair(officialEmailInput: string, notificationEmailInput: string) {
