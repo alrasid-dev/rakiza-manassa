@@ -289,18 +289,29 @@ function main() {
   }
 
   // التحقق النهائي: دائماً على المجموعة الكاملة، مع معالجة الفشل الهشّ تلقائياً بإعادة الفحص.
-  let finalCheck = runTypeCheck();
-  let finalTests = runTests();
-  let finalBuild = runBuild();
-  for (let attempt = 1; attempt <= 2 && !(finalCheck.ok && finalTests.ok && finalBuild.ok); attempt += 1) {
-    if (!finalTests.failedFiles.length) break;
-    note(`التحقق النهائي: إعادة تشغيل الملفات الفاشلة للتحقق من الفشل الهشّ (محاولة ${attempt})…`);
-    const retry = runTests(finalTests.failedFiles.map(relative));
-    if (!retry.ok) { finalTests = retry; break; }
-    report.flaky.push(...finalTests.failedFiles.map(relative));
+  // إن لم يحدث أي إصلاح ولا فشل عابر، فنتيجة الفحص الأول هي ذاتها نتيجة التحقق النهائي:
+  // نتجنب إعادة تشغيل كاملة مكررة (وتُعاد كاملةً دائماً عند حدوث أي إصلاح أو فشل).
+  const nothingChanged = report.appliedFixes.length === 0 && report.revertedFixes.length === 0 && report.flaky.length === 0;
+  let finalCheck = firstCheck;
+  let finalTests = tests;
+  let finalBuild = firstBuild;
+
+  if (!(nothingChanged && firstCheck.ok && firstBuild.ok && tests.ok)) {
     finalCheck = runTypeCheck();
     finalTests = runTests();
     finalBuild = runBuild();
+    for (let attempt = 1; attempt <= 2 && !(finalCheck.ok && finalTests.ok && finalBuild.ok); attempt += 1) {
+      if (!finalTests.failedFiles.length) break;
+      note(`التحقق النهائي: إعادة تشغيل الملفات الفاشلة للتحقق من الفشل الهشّ (محاولة ${attempt})…`);
+      const retry = runTests(finalTests.failedFiles.map(relative));
+      if (!retry.ok) { finalTests = retry; break; }
+      report.flaky.push(...finalTests.failedFiles.map(relative));
+      finalCheck = runTypeCheck();
+      finalTests = runTests();
+      finalBuild = runBuild();
+    }
+  } else {
+    note("لا تغييرات ولا فشل: نتيجة الفحص الأول هي التحقق النهائي (بلا إعادة تشغيل مكررة).");
   }
   const ok = finalCheck.ok && finalTests.ok && finalBuild.ok;
   report.build = finalBuild.ok ? "success" : "failed";
