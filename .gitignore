@@ -11,6 +11,10 @@ build/
 /public
 api/index.js
 api/handler.js
+# مخلفات المعالجة الذاتية
+.auto-heal-report.json
+.auto-heal-vitest.json
+.full-check.json
 
 # Vercel
 .vercel
