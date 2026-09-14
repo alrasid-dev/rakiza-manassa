@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { ENV } from "./_core/env";
+
+const OWNER_EMAIL = ENV.platformOwnerEmail;
 
 const mocks = vi.hoisted(() => ({
   listProfiles: vi.fn(async () => [{ id: 300, fullName: "قاضٍ مختبر", personType: "judge" }]),
@@ -15,7 +18,7 @@ import { courtRouter } from "./routers/court";
 
 describe("مسارات شؤون القضاة", () => {
   it("تعرض الملفات وتنشئ وتعدل ملف قاضٍ تحت صلاحية المالك", async () => {
-    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "owner@court.example", name: "المالك", openId: "owner" } } as never);
+    const owner = courtRouter.createCaller({ user: { id: 1, role: "admin", email: OWNER_EMAIL, name: "المالك", openId: "owner" } } as never);
     await expect(owner.judges.list()).resolves.toEqual([{ id: 300, fullName: "قاضٍ مختبر", personType: "judge" }]);
     await expect(owner.judges.create({ fullName: "قاضٍ جديد", judicialFormation: "الدائرة الأولى" })).resolves.toEqual({ id: 301 });
     expect(mocks.createProfile).toHaveBeenCalledWith(expect.objectContaining({ fullName: "قاضٍ جديد", personType: "judge", actorUserId: 1 }));

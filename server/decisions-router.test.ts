@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ENV } from "./_core/env";
+
+const OWNER_EMAIL = ENV.platformOwnerEmail;
 
 const mocks = vi.hoisted(() => ({
   listPublishedDecisionsCirculars: vi.fn(async (unitId?: number | null) => unitId ? [{ id: 2, unitId, status: "published" }] : [{ id: 1, unitId: null, status: "published" }]),
@@ -23,6 +26,15 @@ vi.mock("./court-service", async importOriginal => {
 import { courtRouter } from "./routers/court";
 
 describe("court.decisions", () => {
+  beforeEach(() => { mocks.createDecisionCircular.mockClear(); mocks.publishDecisionCircular.mockClear(); mocks.markDecisionCircularRead.mockClear(); });
+  it("يحجب الإنشاء والنشر عن بريد رسمي غير مالك حتى مع دور إداري", async () => {
+    const leader = courtRouter.createCaller({ user: { id: 5, role: "admin", email: "president@moj.gov.sa", name: "رئيس المحكمة", openId: "president" } } as never);
+    await expect(leader.decisions.create({ kind: "circular", title: "تعميم غير مصرح", body: "لا يجب أن يُنشر" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(leader.decisions.publish({ id: 7 })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mocks.createDecisionCircular).not.toHaveBeenCalled();
+    expect(mocks.publishDecisionCircular).not.toHaveBeenCalled();
+  });
+
   it("يحصر قراءة المنشورات في وحدة الموظف", async () => {
     const caller = courtRouter.createCaller({ user: { id: 7, role: "user", email: "employee@court.example", name: "موظف", openId: "employee" } } as never);
     await expect(caller.decisions.list()).resolves.toEqual([{ id: 2, unitId: 44, status: "published" }]);
@@ -30,7 +42,7 @@ describe("court.decisions", () => {
   });
 
   it("يحصر الإنشاء والنشر بمالك المنصة ويسجل القراءة للمستخدم الحالي", async () => {
-    const caller = courtRouter.createCaller({ user: { id: 1, role: "admin", email: "owner@court.example", name: "مالك", openId: "owner" } } as never);
+    const caller = courtRouter.createCaller({ user: { id: 1, role: "admin", email: OWNER_EMAIL, name: "مالك", openId: "owner" } } as never);
     await expect(caller.decisions.create({ kind: "circular", title: "تعميم اختباري", body: "محتوى التعميم" })).resolves.toEqual({ id: 7 });
     await expect(caller.decisions.publish({ id: 7 })).resolves.toEqual({ success: true });
     await expect(caller.decisions.markRead({ decisionId: 7 })).resolves.toEqual({ success: true });

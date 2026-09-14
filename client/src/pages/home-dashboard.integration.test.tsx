@@ -12,7 +12,10 @@ const state = vi.hoisted(() => ({
   taskStatus: "new",
 }));
 
-vi.mock("@/components/DashboardLayout", () => ({ default: ({ children }: { children: ReactNode }) => <main>{children}</main> }));
+vi.mock("@/components/DashboardLayout", async importOriginal => {
+  const actual = await importOriginal<typeof import("@/components/DashboardLayout")>();
+  return { ...actual, default: ({ children }: { children: ReactNode }) => <main>{children}</main> };
+});
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     court: {

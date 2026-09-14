@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
+import { ENV } from "./_core/env";
+
+const OWNER_EMAIL = ENV.platformOwnerEmail;
 
 const mocks = vi.hoisted(() => ({
   listProfiles: vi.fn(async () => [{ id: 1, fullName: "ملف شامل" }]),
@@ -64,7 +67,7 @@ describe("سياسة نطاق الأدوار الجديدة", () => {
   });
 
   it("يحصر وحدات المنصة وإضافة البرمجيات في المالك", async () => {
-    const owner = caller({ id: 1, role: "admin", email: "owner@court.example" });
+    const owner = caller({ id: 1, role: "admin", email: OWNER_EMAIL });
     await expect(owner.modules.list()).resolves.toEqual([{ id: 7, moduleKey: "future-module", label: "وحدة مستقبلية" }]);
     await expect(owner.modules.create({ moduleKey: "future-module-2", label: "وحدة", path: "/future", iconKey: "Boxes", moduleType: "software", audience: ["full_control"], sortOrder: 1 })).resolves.toEqual({ id: 8 });
     await expect(caller({ id: 13, role: "user", email: "employee@court.example" }).modules.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
