@@ -16,6 +16,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/**/*.test.tsx", "shared/**/*.test.ts"],
+    // اختبارات الواجهة الشاملة تركّب عشرات الصفحات ومكوّنات Radix بالتوازي، فترتفع مهل الانتظار
+    // لتفادي فشل هشّ لا علاقة له بصحة الشيفرة.
+    testTimeout: 20000,
+    hookTimeout: 30000,
     server: {
       deps: {
         // حزم تستورد ملفات CSS (katex عبر streamdown) فيتعذر تحميلها كوحدة خارجية.

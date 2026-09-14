@@ -1,4 +1,4 @@
-name: فحص الجودة (أنواع + اختبارات)
+name: فحص الجودة (معالجة ذاتية)
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: verify-${{ github.ref }}
@@ -31,13 +32,36 @@ jobs:
           cache: pnpm
       - name: تثبيت الحزم
         run: pnpm install --frozen-lockfile --prod=false
-      - name: فحص الأنواع
-        run: pnpm check
-      - name: تشغيل الاختبارات
-        run: pnpm test
+      - name: المعالجة الذاتية (فحص + إصلاح آلي + إعادة فحص حتى النجاح)
+        run: pnpm auto-heal
+      - name: رفع تقرير المعالجة الذاتية
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-heal-report
+          path: |
+            .auto-heal-report.json
+            .auto-heal-vitest.json
+          if-no-files-found: ignore
+      - name: بلاغ تلقائي عند تعذّر الإصلاح الآلي
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f .auto-heal-report.json ]; then
+            body=$(printf '## تفاصيل المعالجة الذاتية\n\n```json\n%s\n```\n\nسجل التشغيل: %s\n' "$(cat .auto-heal-report.json)" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          else
+            body=$(printf 'تعذّر تشغيل المعالجة الذاتية.\n\nسجل التشغيل: %s\n' "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          fi
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "in:title تعذّر الإصلاح الآلي في فحص الجودة" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "تعذّر الإصلاح الآلي في فحص الجودة (${GITHUB_SHA:0:7})" --body "$body"
+          fi
       - name: ملخص النتيجة
         if: always()
         run: |
-          echo "### نتيجة فحص الجودة" >> "$GITHUB_STEP_SUMMARY"
+          echo "### نتيجة فحص الجودة (معالجة ذاتية)" >> "$GITHUB_STEP_SUMMARY"
           echo "- النتيجة النهائية: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- المراجع: ${{ github.ref_name }} (${GITHUB_SHA:0:7})" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,47 @@
+name: فحص حي بعد النشر
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    name: فحص النسخة المنشورة
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: استنساخ المستودع
+        uses: actions/checkout@v4
+      - name: تهيئة Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: انتظار اكتمال النشر ثم الفحص الحي (مع إعادة محاولة تلقائية)
+        env:
+          RAKIZA_BASE_URL: https://rakiza-manassa.vercel.app
+          RAKIZA_ATTEMPTS: "12"
+          RAKIZA_RETRY_DELAY_MS: "20000"
+        run: node scripts/verify-live.mjs
+      - name: بلاغ تلقائي عند فشل الفحص الحي
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          body=$(printf 'لم يجتز الفحص الحي للنسخة المنشورة بعد كل المحاولات.\n\nسجل التشغيل: %s\n' "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --search "in:title فشل الفحص الحي للنسخة المنشورة" --state open --json number --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "فشل الفحص الحي للنسخة المنشورة (${GITHUB_SHA:0:7})" --body "$body"
+          fi
