@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Chrome, KeyRound, MailCheck } from "lucide-react";
 import { GoogleAuthProvider, createUserWithEmailAndPassword, getRedirectResult, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updatePassword } from "firebase/auth";
 import { platformBasePath } from "@/lib/pwa";
 import { trpc } from "@/lib/trpc";
 import { firebaseWebConfigReady, getFirebaseAuth } from "@/lib/firebase";
+import { PASSWORD_POLICY_HINT, validateLoginPassword, validateNewPassword } from "@shared/password-policy";
 import { Button } from "./ui/button";
 
 type Props = {
@@ -75,7 +76,8 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
   const signInEmail = async () => {
     const auth = getFirebaseAuth();
     if (!auth || !validOfficialEmail) { setNotice("أدخل البريد الرسمي أولاً."); return; }
-    if (password.length < 8) { setNotice("كلمة المرور يجب أن تكون 8 أحرف على الأقل."); return; }
+    const loginPolicy = validateLoginPassword(password);
+    if (!loginPolicy.ok) { setNotice(loginPolicy.message); return; }
     setBusy("signin"); setNotice("");
     try {
       const result = await signInWithEmailAndPassword(auth, officialEmail.trim().toLowerCase(), password);
@@ -88,7 +90,8 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
   const registerEmail = async () => {
     const auth = getFirebaseAuth();
     if (!auth || !validOfficialEmail) { setNotice("أدخل البريد الرسمي أولاً."); return; }
-    if (password.length < 8) { setNotice("اختر كلمة مرور من 8 أحرف على الأقل."); return; }
+    const newPasswordPolicy = validateNewPassword(password);
+    if (!newPasswordPolicy.ok) { setNotice(newPasswordPolicy.message); return; }
     if (activationMode && password !== confirmPassword) { setNotice("تأكيد كلمة المرور غير مطابق."); return; }
     setBusy("register"); setNotice("");
     try {
@@ -123,7 +126,8 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
     <div><p className="text-sm font-bold text-[#29463b]">{activationMode ? "تعيين كلمة مرور جديدة" : "الدخول عبر Google أو البريد"}</p><p className="mt-1 text-xs leading-6 text-[#718078]">{activationMode ? "بعد إثبات الهوية يلزم تعيين كلمة مرور جديدة قبل المتابعة. تبقى OTP والبصمة متاحتين لاحقاً." : "استخدم بريدك الرسمي نفسه. يبقى رمز OTP والبصمة متاحين كخيارات مستقلة."}</p>{Boolean(activationToken) && <p className="mt-2 rounded-lg bg-[#e9f2ea] p-2 text-xs leading-5 text-[#2f694f]">تم إثبات هويتك. يمكنك إنشاء كلمة المرور الآن دون انتظار رسالة تأكيد البريد؛ رمز التفعيل صالح لمرة واحدة.</p>}</div>
     {!activationMode && <Button type="button" className="w-full bg-white text-[#29463b] shadow-sm hover:bg-[#f3f6f0]" variant="outline" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void signInGoogle()}><Chrome className="ml-2 h-4 w-4" />{busy === "google" ? "جارٍ فتح Google…" : "الدخول عبر Google الرسمي"}</Button>}
     {!activationMode && <div className="relative py-1 text-center text-xs text-[#8a978e]"><span className="relative z-10 bg-[#f7faf5] px-2">أو</span><div className="absolute inset-x-0 top-1/2 border-t border-[#d9e5d9]" /></div>}
-    <label className="block text-xs font-bold text-[#52665a]">{activationMode ? "كلمة المرور الجديدة" : "كلمة المرور"}<input value={password} onChange={event => setPassword(event.target.value)} type="password" autoComplete={activationMode ? "new-password" : "current-password"} placeholder="8 أحرف على الأقل" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" /></label>
+    <label className="block text-xs font-bold text-[#52665a]">{activationMode ? "كلمة المرور الجديدة" : "كلمة المرور"}<input value={password} onChange={event => setPassword(event.target.value)} type="password" autoComplete={activationMode ? "new-password" : "current-password"} placeholder="8 خانات على الأقل" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" /></label>
+    <p className="mt-1 text-[11px] leading-5 text-[#718078]">{PASSWORD_POLICY_HINT}</p>
     {activationMode && <label className="block text-xs font-bold text-[#52665a]">تأكيد كلمة المرور<input value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" placeholder="أعد كتابة كلمة المرور" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" /></label>}
     <div className={`grid gap-3 ${activationMode ? "" : "sm:grid-cols-2"}`}><Button type="button" className="bg-[#006c35] hover:bg-[#00552b]" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void (activationMode ? registerEmail() : signInEmail())}><KeyRound className="ml-2 h-4 w-4" />{busy === "signin" || busy === "register" ? "جارٍ الحفظ…" : activationMode ? "حفظ كلمة المرور ومتابعة الدخول" : "دخول بالبريد"}</Button>{!activationMode && <Button type="button" variant="outline" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void registerEmail()}><MailCheck className="ml-2 h-4 w-4" />{busy === "register" ? "جارٍ الإنشاء…" : "إنشاء كلمة مرور"}</Button>}</div>
     {notice && <p role="status" className="rounded-xl bg-white p-3 text-xs leading-6 text-[#426253]">{notice}</p>}

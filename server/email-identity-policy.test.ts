@@ -28,6 +28,21 @@ describe("هوية البريد الرسمي وقنوات التنبيه", () =>
     await expect(getNotificationEmailRecipients(1)).resolves.toEqual(["rakizaplatform@gmail.com"]);
     expect(isAllowedLoginEmail("abdulaziz.stocks11@gmail.com")).toBe(false);
   });
+  it("يحترم تفضيل قناة التنبيه عند إرسال بريد المنصة", async () => {
+    const base = { id: 7, officialEmail: "employee@moj.gov.sa", backupEmail: "employee@gmail.com", backupEmailVerifiedAt: new Date() };
+    mocks.rows = [{ ...base, emailNotificationPreference: "work" }];
+    await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@moj.gov.sa"]);
+    mocks.rows = [{ ...base, emailNotificationPreference: "backup" }];
+    await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@gmail.com"]);
+    mocks.rows = [{ ...base, emailNotificationPreference: "both" }];
+    await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@moj.gov.sa", "employee@gmail.com"]);
+  });
+  it("يبقي البريد الإضافي خارج قناة التنبيه قبل توثيقه حتى مع اختيار الاثنين", async () => {
+    mocks.rows = [{ id: 7, officialEmail: "employee@moj.gov.sa", backupEmail: "employee@gmail.com", backupEmailVerifiedAt: null, emailNotificationPreference: "both" }];
+    await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@moj.gov.sa"]);
+    mocks.rows = [{ id: 7, officialEmail: "employee@moj.gov.sa", backupEmail: "employee@gmail.com", backupEmailVerifiedAt: null, emailNotificationPreference: "backup" }];
+    await expect(getNotificationEmailRecipients(7)).resolves.toEqual(["employee@moj.gov.sa"]);
+  });
   it("لا يعيد أي قناة إذا لم يثبت البريد الرسمي أو كان شخصياً غير مصرح", async () => {
     mocks.rows = [{ id: 7, officialEmail: "employee@gmail.com", backupEmail: "employee@example.com", backupEmailVerifiedAt: new Date() }];
     await expect(getNotificationEmailRecipients(7)).resolves.toEqual([]);

@@ -570,11 +570,11 @@ export const courtRouter = router({
     mine: protectedProcedure.query(async ({ ctx }) => {
       const settings = await getUserEmailSettings(ctx.user.id);
       if (!settings) throw new TRPCError({ code: "NOT_FOUND", message: "إعدادات الحساب غير موجودة." });
-      return { officialEmail: settings.officialEmail, notificationEmail: settings.backupEmail, notificationEmailVerifiedAt: settings.backupEmailVerifiedAt, officialEmailIsValid: Boolean(settings.officialEmail && isAllowedLoginEmail(settings.officialEmail)) };
+      return { officialEmail: settings.officialEmail, notificationEmail: settings.backupEmail, notificationEmailVerifiedAt: settings.backupEmailVerifiedAt, notificationPreference: settings.emailNotificationPreference ?? "work", officialEmailIsValid: Boolean(settings.officialEmail && isAllowedLoginEmail(settings.officialEmail)) };
     }),
-    update: protectedProcedure.input(z.object({ notificationEmail: z.string().trim().email().max(320).nullable() })).mutation(async ({ ctx, input }) => {
+    update: protectedProcedure.input(z.object({ notificationEmail: z.string().trim().email().max(320).nullable(), notificationPreference: z.enum(["work", "backup", "both"]).optional() })).mutation(async ({ ctx, input }) => {
       try {
-        return await updateUserEmailSettings({ userId: ctx.user.id, backupEmail: input.notificationEmail });
+        return await updateUserEmailSettings({ userId: ctx.user.id, backupEmail: input.notificationEmail, emailNotificationPreference: input.notificationPreference });
       } catch (error) {
         throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "تعذر حفظ إعدادات البريد." });
       }

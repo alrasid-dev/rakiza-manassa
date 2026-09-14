@@ -4,14 +4,26 @@ import { trpc } from "@/lib/trpc";
 import React, { useEffect, useState } from "react";
 import { MailCheck, ShieldCheck, Volume2, VolumeX } from "lucide-react";
 
+type EmailChannelPreference = "work" | "backup" | "both";
+
+const EMAIL_CHANNEL_OPTIONS: ReadonlyArray<{ value: EmailChannelPreference; label: string; hint: string }> = [
+  { value: "work", label: "البريد الرسمي فقط", hint: "كل التنبيهات تُرسل إلى بريدك الرسمي @moj.gov.sa." },
+  { value: "backup", label: "البريد الإضافي فقط", hint: "يُستخدم البريد الإضافي بعد توثيقه، وإلا يعود النظام تلقائياً للبريد الرسمي." },
+  { value: "both", label: "البريدان معاً", hint: "نسخة لكل بريد بعد توثيق البريد الإضافي." },
+];
+
 export function EmailSettingsPage() {
   const settings = trpc.court.emailSettings.mine.useQuery();
   const update = trpc.court.emailSettings.update.useMutation({ onSuccess: () => settings.refetch() });
   const [notificationEmail, setNotificationEmail] = useState("");
+  const [notificationPreference, setNotificationPreference] = useState<EmailChannelPreference>("work");
   const [recommendationSoundEnabled, setRecommendationSoundEnabled] = useState(true);
 
   useEffect(() => {
-    if (settings.data) setNotificationEmail(settings.data.notificationEmail ?? "");
+    if (settings.data) {
+      setNotificationEmail(settings.data.notificationEmail ?? "");
+      setNotificationPreference(settings.data.notificationPreference ?? "work");
+    }
     setRecommendationSoundEnabled(window.localStorage.getItem("rakiza:recommendation-sound") !== "off");
   }, [settings.data]);
 
@@ -35,7 +47,22 @@ export function EmailSettingsPage() {
       <label className="mt-4 block text-sm font-bold text-[#385449]">البريد الذي يستقبل OTP والتنبيهات<input type="email" value={notificationEmail} onChange={e => setNotificationEmail(e.target.value)} placeholder="alerts@example.com" className="mt-2 h-11 w-full rounded-xl border border-input px-3 text-sm" /></label>
       <p className="mt-2 text-xs leading-5 text-[#78867e]">بعد تغييره، اطلب رمز دخول جديداً لتأكيد ملكيتك للبريد. لا يظهر هذا البريد في البحث أو المراسلات الداخلية.</p>
       <p className={`mt-3 rounded-xl p-3 text-sm ${settings.data?.notificationEmailVerifiedAt ? "bg-[#e9f2ea] text-[#2f694f]" : "bg-[#fff8e8] text-[#8a6731]"}`}>{settings.data?.notificationEmailVerifiedAt ? "بريد الإشعارات موثق ويستقبل التنبيهات." : "بريد الإشعارات غير موثق بعد؛ سيُوثق عند نجاح أول OTP."}</p>
-      <Button className="mt-6 bg-[#006c35] hover:bg-[#00552b]" disabled={update.isPending || !settings.data?.officialEmailIsValid} onClick={() => update.mutate({ notificationEmail: notificationEmail.trim() || null })}>{update.isPending ? "جارٍ الحفظ…" : "حفظ بريد الإشعارات"}</Button>
+      <div className="mt-7 border-t border-[#eee8de] pt-6">
+        <h2 className="font-bold text-[#12352f]">قناة إرسال التنبيهات</h2>
+        <p className="mt-2 text-xs leading-5 text-[#78867e]">اختر البريد الذي تستقبل فيه تنبيهات المهام والحضور والمراسلات المرسلة من المنصة.</p>
+        {!settings.data?.notificationEmail && <p className="mt-3 rounded-xl bg-[#fff8e8] p-3 text-xs leading-5 text-[#8a6731]">أضف بريداً إضافياً واحفظه أولاً لتفعيل خيارَي «البريد الإضافي فقط» و«البريدان معاً».</p>}
+        <div role="radiogroup" aria-label="قناة إرسال التنبيهات" className="mt-4 grid gap-2 sm:grid-cols-3">
+          {EMAIL_CHANNEL_OPTIONS.map(option => {
+            const disabled = option.value !== "work" && !settings.data?.notificationEmail;
+            const selected = notificationPreference === option.value;
+            return <button key={option.value} type="button" role="radio" aria-checked={selected} disabled={disabled} onClick={() => setNotificationPreference(option.value)} className={`rounded-xl border px-3 py-3 text-right transition ${selected ? "border-[#006c35] bg-[#e9f2ea] ring-2 ring-[#006c35]/20" : "border-[#e7e0d4] bg-[#f8f8f3] hover:bg-[#eef5ec]"} ${disabled ? "cursor-not-allowed opacity-50" : ""}`}>
+              <span className="block text-xs font-black text-[#29463b]">{option.label}</span>
+              <span className="mt-1 block text-[11px] leading-5 text-[#65766d]">{option.hint}</span>
+            </button>;
+          })}
+        </div>
+      </div>
+      <Button className="mt-6 bg-[#006c35] hover:bg-[#00552b]" disabled={update.isPending || !settings.data?.officialEmailIsValid} onClick={() => update.mutate({ notificationEmail: notificationEmail.trim() || null, notificationPreference })}>{update.isPending ? "جارٍ الحفظ…" : "حفظ بريد الإشعارات"}</Button>
       {update.error && <p role="alert" className="mt-3 text-sm text-[#9a4634]">{update.error.message}</p>}
       {update.isSuccess && <p className="mt-3 text-sm font-bold text-[#2f7351]">تم حفظ بريد الإشعارات. استخدم OTP القادم لتوثيقه.</p>}
       <div className="mt-8 border-t border-[#eee8de] pt-6">

@@ -153,7 +153,8 @@ function vitePluginManusDebugCollector(): Plugin {
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
 export default defineConfig({
-  base: process.env.GITHUB_PAGES === "1" ? "/rakiza-manassa/" : "/",
+  // المسار الأساسي في GitHub Pages يُشتق من اسم المستودع الفعلي (fallback: rakiza-manassa) ليعمل المستودع الأصلي والمستودع المطوَّر دون تعديل يدوي.
+  base: process.env.GITHUB_PAGES === "1" ? `/${process.env.GITHUB_REPOSITORY?.split("/")[1] || "rakiza-manassa"}/` : "/",
   plugins,
   resolve: {
     alias: {
