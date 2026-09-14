@@ -62,7 +62,7 @@ export async function verifyFirebaseIdToken(idToken: string, options?: { allowUn
   const verified = payload.email_verified === true;
   const signInProvider = (payload.firebase as { sign_in_provider?: string } | undefined)?.sign_in_provider;
   const provider = signInProvider === "google.com" ? "google.com" : signInProvider === "password" ? "password" : "unknown";
-  if (!uid || !email || (!verified && !options?.allowUnverifiedEmail) || !isAllowedLoginEmail(email)) throw new Error("يلزم بريد رسمي موثق ومسموح به للدخول إلى رَكيزة، أو رمز تفعيل لمرة واحدة بعد إثبات الهوية.");
+  if (!uid || !email || (!verified && !options?.allowUnverifiedEmail) || !isAllowedLoginEmail(email)) throw new Error("يلزم بريد رسمي موثق ومسموح به للدخول إلى رَكيزة.");
   return { uid, email, name, provider };
 }
 

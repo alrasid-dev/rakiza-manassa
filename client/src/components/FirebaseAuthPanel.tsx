@@ -30,7 +30,7 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
     if (code === "auth/network-request-failed") return "تعذر الاتصال بخدمة Firebase من هذا الجهاز. تحقق من الإنترنت أو جرّب شبكة جوال/نافذة خفية، ثم أعد المحاولة.";
     if (code === "auth/operation-not-allowed") return "طريقة الدخول هذه غير مفعلة في Firebase Authentication حتى الآن.";
     if (code === "auth/invalid-credential" || code === "auth/invalid-login-credentials") return "البريد أو كلمة المرور غير صحيحة، أو لم يتم إنشاء كلمة مرور لهذا البريد بعد.";
-    if (code === "auth/email-already-in-use") return "يوجد حساب بكلمة مرور لهذا البريد. استخدم «دخول بالبريد» أو عيّن كلمة مرور جديدة عبر OTP ثم التفعيل.";
+    if (code === "auth/email-already-in-use") return "يوجد حساب بكلمة مرور لهذا البريد. استخدم «دخول بالبريد» أو ابدأ إعداد كلمة المرور من حسابك المعتمد.";
     if (code === "auth/popup-blocked") return "المتصفح منع النافذة المنبثقة؛ أعد المحاولة وسيُفتح تسجيل Google في الصفحة نفسها.";
     return error instanceof Error ? error.message : fallback;
   };

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  verify: vi.fn(async () => ({ uid: "firebase-uid-1", email: "employee@moj.gov.sa", name: "موظف اختبار", provider: "google.com" as const })),
+  verify: vi.fn(async () => ({ uid: "firebase-uid-1", email: "employee@moj.gov.sa", name: "موظف اختبار", provider: "password" as const })),
   link: vi.fn(async () => ({ user: { id: 42, openId: "otp:employee@moj.gov.sa", name: "موظف اختبار" }, profileId: 8 })),
   createSessionToken: vi.fn(async () => "rakiza-session"),
   issueActivation: vi.fn(async () => ({ token: "activation-token-12345678901234567890", expiresInSeconds: 600 })),
@@ -35,7 +35,7 @@ describe("جسر مصادقة Firebase", () => {
 
   it("يتحقق من الرمز ويربط الحساب ثم ينشئ جلسة رَكيزة", async () => {
     const { api, res } = caller();
-    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).resolves.toEqual({ verified: true, provider: "google.com", mustChangePassword: false });
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).resolves.toEqual({ verified: true, provider: "password", mustChangePassword: false });
     expect(mocks.verify).toHaveBeenCalledWith("x".repeat(300), { allowUnverifiedEmail: false });
     expect(mocks.link).toHaveBeenCalledWith(expect.objectContaining({ email: "employee@moj.gov.sa" }));
     expect(mocks.createSessionToken).toHaveBeenCalledWith("otp:employee@moj.gov.sa", expect.objectContaining({ name: "موظف اختبار" }));
@@ -44,9 +44,22 @@ describe("جسر مصادقة Firebase", () => {
 
   it("يسمح بالبريد غير المؤكد فقط مع رمز التفعيل وجلسة مطابقة", async () => {
     const { api, res } = caller({ id: 42, email: "employee@moj.gov.sa", openId: "otp:employee@moj.gov.sa", name: "موظف اختبار" });
-    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300), activationToken: "activation-token-12345678901234567890" })).resolves.toEqual({ verified: true, provider: "google.com", mustChangePassword: false });
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300), activationToken: "activation-token-12345678901234567890" })).resolves.toEqual({ verified: true, provider: "password", mustChangePassword: false });
     expect(mocks.verify).toHaveBeenCalledWith("x".repeat(300), { allowUnverifiedEmail: true });
     expect(mocks.consumeActivation).toHaveBeenCalledWith({ userId: 42, token: "activation-token-12345678901234567890" });
     expect(res.cookie).toHaveBeenCalled();
+  });
+
+  it("يرفض كلمة المرور لبريد مالك المنصة", async () => {
+    mocks.verify.mockResolvedValueOnce({ uid: "owner-uid", email: "rakizaplatform@gmail.com", name: "مالك المنصة", provider: "password" });
+    const { api } = caller();
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).rejects.toThrow("متاح عبر Google فقط");
+    expect(mocks.link).not.toHaveBeenCalledWith(expect.objectContaining({ email: "rakizaplatform@gmail.com" }));
+  });
+
+  it("يرفض Google لبريد الموظف الرسمي", async () => {
+    mocks.verify.mockResolvedValueOnce({ uid: "employee-google", email: "employee@moj.gov.sa", name: "موظف اختبار", provider: "google.com" });
+    const { api } = caller();
+    await expect(api.firebaseAuth.exchange({ idToken: "x".repeat(300) })).rejects.toThrow("استخدم البريد الرسمي مع كلمة المرور");
   });
 });

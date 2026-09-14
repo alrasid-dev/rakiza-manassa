@@ -473,8 +473,10 @@ export const courtRouter = router({
     exchange: publicProcedure.input(z.object({ idToken: z.string().min(200).max(20000), activationToken: z.string().min(20).max(200).optional(), completePasswordSetup: z.boolean().optional() })).mutation(async ({ ctx, input }) => {
       try {
         const identity = await verifyFirebaseIdToken(input.idToken, { allowUnverifiedEmail: Boolean(input.activationToken) });
+        if (isPlatformOwnerEmail(identity.email) && identity.provider !== "google.com") throw new Error("دخول مالك المنصة متاح عبر Google فقط.");
+        if (isOfficialMojEmail(identity.email) && identity.provider !== "password") throw new Error("استخدم البريد الرسمي مع كلمة المرور من شاشة دخول الموظفين.");
         if (input.activationToken) {
-          if (!ctx.user || ctx.user.email?.trim().toLowerCase() !== identity.email) throw new Error("يجب إصدار رمز التفعيل بعد إثبات هويتك بـOTP أو مفتاح المرور، وبنفس البريد الرسمي.");
+          if (!ctx.user || ctx.user.email?.trim().toLowerCase() !== identity.email) throw new Error("يجب إصدار رمز التفعيل من حسابك المعتمد وبنفس البريد الرسمي.");
           await consumeAuthActivationToken({ userId: ctx.user.id, token: input.activationToken });
         }
         const linked = await linkFirebaseIdentity(identity);

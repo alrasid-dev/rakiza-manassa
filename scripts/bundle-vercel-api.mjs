@@ -5,7 +5,7 @@ import path from "node:path";
 const outfile = "api/handler.js";
 
 await esbuild.build({
-  entryPoints: ["api/handler.ts"],
+  entryPoints: ["api/handler-entry.ts"],
   bundle: true,
   platform: "node",
   format: "esm",

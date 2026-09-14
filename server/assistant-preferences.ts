@@ -1,4 +1,4 @@
-import { listManagerDecisionPatterns } from "./assistant-learning-service";
+import { listManagerDecisionPatterns } from "./assistant-learning-service.js";
 
 type DecisionMetadata = { assistant?: string; decisionType?: string; decision?: "accepted" | "rejected" | "modified" };
 
