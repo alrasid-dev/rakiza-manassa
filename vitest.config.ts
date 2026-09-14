@@ -16,5 +16,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["server/**/*.test.ts", "server/**/*.spec.ts", "client/**/*.test.tsx", "shared/**/*.test.ts"],
+    server: {
+      deps: {
+        // حزم تستورد ملفات CSS (katex عبر streamdown) فيتعذر تحميلها كوحدة خارجية.
+        inline: ["streamdown", "katex", "rehype-katex", "react-markdown", "remark-gfm"],
+      },
+    },
   },
 });
