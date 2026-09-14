@@ -1,0 +1,11 @@
+{
+  "name": "rakiza-manassa",
+  "install": "corepack enable && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm dev"
+    }
+  ],
+  "ports": [3000]
+}
