@@ -100,7 +100,7 @@ describe("سياسة كلمة المرور في لوحة الدخول", () => {
     signInEmail.mockResolvedValue({ user: { emailVerified: false, getIdToken: async () => "token" } });
     render(<FirebaseAuthPanel officialEmail="user@moj.gov.sa" validOfficialEmail />);
     fireEvent.change(passwordField(), { target: { value: "abcdefgh" } });
-    fireEvent.click(screen.getByRole("button", { name: /دخول بالبريد/ }));
+    fireEvent.click(screen.getByRole("button", { name: "دخول" }));
     await waitFor(() => expect(signInEmail).toHaveBeenCalledWith(expect.anything(), "user@moj.gov.sa", "abcdefgh"));
     expect(screen.getByRole("status").textContent).toContain("أكد بريدك الرسمي");
   });
@@ -108,7 +108,7 @@ describe("سياسة كلمة المرور في لوحة الدخول", () => {
   it("تمنع الدخول بكلمة مرور أقصر من الحد الأدنى", () => {
     render(<FirebaseAuthPanel officialEmail="user@moj.gov.sa" validOfficialEmail />);
     fireEvent.change(passwordField(), { target: { value: "rk2026" } });
-    fireEvent.click(screen.getByRole("button", { name: /دخول بالبريد/ }));
+    fireEvent.click(screen.getByRole("button", { name: "دخول" }));
     expect(screen.getByRole("status").textContent).toContain("8 خانات على الأقل");
     expect(signInEmail).not.toHaveBeenCalled();
   });
