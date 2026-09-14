@@ -33,7 +33,10 @@ describe("زر جدولة بريد ركيزة", () => {
     fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "تأكيد التكرار" }));
     expect(recurringMutate).toHaveBeenCalledWith(expect.objectContaining({ messageId: 42, frequency: "weekly", intervalCount: 1, weekdays: [0], monthDay: null, endsAt: null }));
-    expect(recurringMutate.mock.calls[0]?.[0].startsAt.toISOString()).toBe("2030-01-10T09:30:00.000Z");
+    const startsAt = recurringMutate.mock.calls[0]?.[0].startsAt as Date;
+    expect(startsAt).toBeInstanceOf(Date);
+    const pad = (part: number) => String(part).padStart(2, "0");
+    expect(`${startsAt.getFullYear()}-${pad(startsAt.getMonth() + 1)}-${pad(startsAt.getDate())}T${pad(startsAt.getHours())}:${pad(startsAt.getMinutes())}`).toBe("2030-01-10T09:30");
   });
 
   it("يعرض التحكم في الإيقاف للجدولة التي يملكها صاحب المسودة", () => {
