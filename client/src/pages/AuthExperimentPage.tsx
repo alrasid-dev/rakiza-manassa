@@ -1,86 +1,138 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
-import { ArrowRight, CheckCircle2, Fingerprint, Headset, KeyRound, Mail, MonitorSmartphone, ShieldCheck, Smartphone, UserPlus, UserRoundCog } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Fingerprint, Headset, ShieldCheck, UserPlus, UserRoundCog } from "lucide-react";
 import { FirebaseAuthPanel } from "@/components/FirebaseAuthPanel";
+import { OwnerGoogleLogin, PLATFORM_OWNER_EMAIL } from "@/components/OwnerGoogleLogin";
 import { PwaInstallHint } from "@/components/PwaInstallHint";
 import { platformBasePath, platformHref } from "@/lib/pwa";
 import { STATIC_HOST_LOGIN_MESSAGE, isPublicStaticHost, operationalLoginHref } from "@/lib/runtime";
 import { trpc } from "@/lib/trpc";
 
-const PLATFORM_OWNER_EMAIL = "rakizaplatform@gmail.com";
+const LAST_EMAIL_KEY = "rakiza:last-official-email";
+const MOJ_EMAIL_PATTERN = /^[^@\s]+@moj\.gov\.sa$/i;
 
 export function AuthExperimentPage() {
-  const [method, setMethod] = useState<"otp" | "passkey" | "firebase">("firebase");
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [mode, setMode] = useState<"employee" | "owner">("employee");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [notice, setNotice] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [passkeyState, setPasskeyState] = useState<"idle" | "unsupported" | "ready">("idle");
-  const [devices, setDevices] = useState<string[]>([]);
-  const [activationToken, setActivationToken] = useState<string | null>(null);
-  const [forcePasswordSetup, setForcePasswordSetup] = useState(false);
-  const [phone, setPhone] = useState("");
-  const validLoginEmail = useMemo(() => /^[^@\s]+@moj\.gov\.sa$/i.test(email.trim()) || email.trim().toLowerCase() === PLATFORM_OWNER_EMAIL, [email]);
-  const passkeyErrorMessage = (error: unknown, action: "register" | "authenticate") => {
-    const name = error instanceof DOMException ? error.name : "";
-    if (name === "NotAllowedError") return "تم إلغاء نافذة البصمة أو لم يكتمل التحقق. اضغط الزر مرة أخرى واترك نافذة الجهاز مفتوحة حتى النهاية.";
-    if (name === "InvalidStateError") return "مفتاح المرور موجود مسبقاً على هذا الجهاز. استخدم «الدخول بالمفتاح» بدلاً من تسجيله مرة أخرى.";
-    if (name === "SecurityError") return "رفض المتصفح العملية لأن الرابط أو النطاق غير آمن. افتح رابط رَكيزة الرسمي عبر HTTPS.";
-    if (name === "ConstraintError") return "يوجد مفتاح مرور متعارض لهذا الحساب على الجهاز. اختر جهازاً أو متصفحاً آخر.";
-    return error instanceof Error ? error.message : action === "register" ? "تعذر تسجيل مفتاح المرور. يمكنك الدخول مؤقتاً عبر OTP." : "تعذر الدخول بمفتاح المرور. استخدم OTP كمسار احتياطي.";
-  };
-  const requestOtpMutation = trpc.court.otp.request.useMutation();
-  const verifyOtpMutation = trpc.court.otp.verify.useMutation();
+  const [passkeyNotice, setPasskeyNotice] = useState("");
+  const [activationToken] = useState<string | null>(null);
+  const [forcePasswordSetup] = useState(false);
+  const validLoginEmail = useMemo(() => MOJ_EMAIL_PATTERN.test(email.trim()), [email]);
+  const passkeySupported = typeof window !== "undefined" && "PublicKeyCredential" in window && window.isSecureContext;
+
   const beginRegistrationMutation = trpc.court.passkey.beginRegistration.useMutation();
   const finishRegistrationMutation = trpc.court.passkey.finishRegistration.useMutation();
   const beginAuthenticationMutation = trpc.court.passkey.beginAuthentication.useMutation();
   const finishAuthenticationMutation = trpc.court.passkey.finishAuthentication.useMutation();
-  const firebaseAuthRouter = (trpc.court as any).firebaseAuth;
-  const issueActivationMutation = firebaseAuthRouter?.issueActivation?.useMutation?.() ?? { isPending: false, mutateAsync: async () => { throw new Error("تم الدخول بنجاح، لكن تعذر إصدار رمز التفعيل حالياً. يمكنك تسجيل مفتاح المرور بعد دخول OTP."); } };
-  const requestByPhone = (trpc.court.otp as any).requestByPhone?.useMutation?.() ?? { mutateAsync: async () => { throw new Error("أدخل بريدك الرسمي أو استخدم صفحة الاستعادة."); }, isPending: false };
 
   useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const timer = window.setTimeout(() => setResendCooldown(current => Math.max(0, current - 1)), 1000);
-    return () => window.clearTimeout(timer);
-  }, [resendCooldown]);
-  useEffect(() => {
-    const liveLogin = operationalLoginHref();
-    if (isPublicStaticHost() && liveLogin) window.location.replace(liveLogin);
+    const stored = window.localStorage.getItem(LAST_EMAIL_KEY);
+    if (stored) setEmail(stored);
   }, []);
 
-  const requestOtp = async (event: React.FormEvent) => { event.preventDefault(); if (!validLoginEmail) { setNotice("أدخل البريد الرسمي المنتهي بـ moj.gov.sa أو بريد مالك رَكيزة المهيأ."); return; } setNotice(""); try { const result = await requestOtpMutation.mutateAsync({ officialEmail: email.trim() }); setStep("code"); setResendCooldown(60); setNotice(`تم إرسال رمز التحقق. تنتهي صلاحيته خلال ${Math.round(result.expiresInSeconds / 60)} دقائق.`); } catch (error) { setNotice(error instanceof Error ? error.message : "تعذر إرسال رمز التحقق."); } };
-  const resendOtp = async () => {
-    if (resendCooldown > 0 || requestOtpMutation.isPending || !validLoginEmail) return;
-    setNotice("");
+  useEffect(() => {
+    const trimmed = email.trim().toLowerCase();
+    if (MOJ_EMAIL_PATTERN.test(trimmed) || trimmed === PLATFORM_OWNER_EMAIL) window.localStorage.setItem(LAST_EMAIL_KEY, trimmed);
+  }, [email]);
+
+  const passkeyErrorMessage = (error: unknown, action: "register" | "authenticate") => {
+    const name = error instanceof DOMException ? error.name : "";
+    if (name === "NotAllowedError") return "تم إلغاء نافذة البصمة أو لم يكتمل التحقق. اضغط الزر مرة أخرى واترك نافذة الجهاز مفتوحة حتى النهاية.";
+    if (name === "InvalidStateError") return "البصمة مسجلة مسبقاً على هذا الجهاز. استخدم «الدخول بالبصمة» مباشرة.";
+    if (name === "SecurityError") return "رفض المتصفح العملية لأن الرابط غير آمن. افتح رابط رَكيزة الرسمي عبر HTTPS.";
+    if (name === "ConstraintError") return "يوجد تعارض في بصمة هذا الحساب على الجهاز. جرّب متصفحاً أو جهازاً آخر.";
+    const message = error instanceof Error ? error.message : "";
+    if (/UNAUTHORIZED|غير مصرح/i.test(message)) return "تفعيل البصمة يتم بعد أول دخول بكلمة المرور: سجّل دخولك ثم اضغط الزر مرة أخرى.";
+    if (/ملف موظف|بريد رسمي/i.test(message)) return "لا يوجد حساب مسجَّل بهذا البريد بعد. أكمل أول دخول بكلمة المرور ثم فعّل البصمة.";
+    return message || (action === "register" ? "تعذر تفعيل البصمة على هذا الجهاز." : "لا توجد بصمة مسجّلة لهذا الحساب على هذا الجهاز. فعّلها بعد الدخول بكلمة المرور.");
+  };
+
+  const enrollPasskey = async () => {
+    setPasskeyNotice("");
+    if (!validLoginEmail) { setPasskeyNotice("أدخل بريدك الرسمي المنتهي بـ @moj.gov.sa أولاً، ثم اضغط الزر مرة أخرى."); return; }
+    if (!passkeySupported) { setPasskeyNotice("هذا المتصفح أو الرابط لا يدعم البصمة. افتح رابط رَكيزة الرسمي عبر HTTPS."); return; }
     try {
-      const result = await requestOtpMutation.mutateAsync({ officialEmail: email.trim() });
-      setResendCooldown(60);
-      setNotice(`تم إرسال رمز جديد. تنتهي صلاحيته خلال ${Math.round(result.expiresInSeconds / 60)} دقائق.`);
+      const options = await beginRegistrationMutation.mutateAsync({ officialEmail: email.trim() });
+      const response = await startRegistration({ optionsJSON: options });
+      const result = await finishRegistrationMutation.mutateAsync({ officialEmail: email.trim(), response });
+      if (result?.verified) setPasskeyNotice("تم تفعيل الدخول بالبصمة على هذا الجهاز. يمكنك الآن الدخول بالبصمة دون كلمة مرور.");
     } catch (error) {
-      setResendCooldown(60);
-      setNotice(error instanceof Error ? error.message : "تعذر إعادة إرسال رمز التحقق.");
+      setPasskeyNotice(passkeyErrorMessage(error, "register"));
     }
   };
-  const verifyOtp = async (event: React.FormEvent) => { event.preventDefault(); if (!/^\d{6}$/.test(code)) { setNotice("أدخل رمزاً من ستة أرقام."); return; } setNotice(""); try { const result = await verifyOtpMutation.mutateAsync({ officialEmail: email.trim(), code }); if (result.verified) { setStep("email"); setCode(""); setPasskeyState("idle"); const needsPassword = Boolean((result as { mustChangePassword?: boolean }).mustChangePassword); setForcePasswordSetup(needsPassword || true); setMethod("firebase"); setNotice(needsPassword ? "تم إثبات هويتك. عيّن كلمة مرور جديدة الآن لإكمال أول دخول." : "تم الدخول بنجاح وإثبات هويتك بـOTP. سجّل كلمة المرور أو بصمة هذا الجهاز."); try { const activation = await issueActivationMutation.mutateAsync(); setActivationToken(activation.token); } catch { /* البصمة تبقى المسار الأساسي بعد أول دخول */ } } else { setNotice(result.reason === "expired" ? "انتهت صلاحية الرمز. اطلب رمزاً جديداً." : result.reason === "locked" ? "تم إيقاف المحاولات مؤقتاً. اطلب رمزاً جديداً لاحقاً." : "الرمز غير صحيح."); } } catch (error) { setNotice(error instanceof Error ? error.message : "تعذر التحقق من الرمز."); } };
-  const ensureWebAuthn = () => { if (!("PublicKeyCredential" in window) || !window.isSecureContext) { setPasskeyState("unsupported"); setNotice("المتصفح أو المعاينة الحالية لا توفر سياقاً آمناً يدعم Passkeys. جرّب HTTPS بعد النشر."); return false; } return true; };
-  const registerPasskey = async () => { if (!ensureWebAuthn() || !validLoginEmail) { if (!validLoginEmail) setNotice("أدخل بريدك الرسمي أو بريد المالك المعتمد أولاً ثم سجّل هذا الجهاز بعد الدخول الحالي."); return; } try { setNotice("جارٍ تجهيز تسجيل الجهاز…"); const options = await beginRegistrationMutation.mutateAsync({ officialEmail: email.trim() }); const response = await startRegistration({ optionsJSON: options }); const result = await finishRegistrationMutation.mutateAsync({ officialEmail: email.trim(), response }); if (result.verified) { setDevices(current => [...current, "الجهاز الحالي · مسجل الآن"]); setPasskeyState("ready"); setNotice("تم تسجيل مفتاح المرور. تبقى البصمة أو Face ID داخل جهازك ولا تُرسل إلى رَكيزة."); } } catch (error) { setPasskeyState("idle"); setNotice(passkeyErrorMessage(error, "register")); } };
-  const authenticatePasskey = async () => { if (!ensureWebAuthn() || !validLoginEmail) { if (!validLoginEmail) setNotice("أدخل بريدك الرسمي أو بريد المالك المعتمد لبدء الدخول بمفتاح المرور."); return; } try { setNotice("جارٍ طلب التحقق من الجهاز…"); const options = await beginAuthenticationMutation.mutateAsync({ officialEmail: email.trim() }); const response = await startAuthentication({ optionsJSON: options }); const result = await finishAuthenticationMutation.mutateAsync({ officialEmail: email.trim(), response }); if (result.verified) { setPasskeyState("ready"); setNotice("تم التحقق بمفتاح المرور وإنشاء جلسة الدخول."); window.location.assign(platformBasePath()); } else setNotice(result.reason === "expired" ? "انتهت جلسة التحقق. أعد المحاولة." : "تعذر التحقق من مفتاح المرور. استخدم OTP إذا لم يكن الجهاز مسجلاً."); } catch (error) { setPasskeyState("idle"); setNotice(passkeyErrorMessage(error, "authenticate")); } };
 
-  const openOwnerLogin = () => {
-    setEmail(PLATFORM_OWNER_EMAIL);
-    setMethod("firebase");
-    setForcePasswordSetup(false);
-    setNotice("أدخل كلمة مرور مالك المنصة أو استخدم Google بنفس البريد.");
+  const signInWithPasskey = async () => {
+    setPasskeyNotice("");
+    if (!validLoginEmail) { setPasskeyNotice("أدخل بريدك الرسمي المنتهي بـ @moj.gov.sa أولاً، ثم اضغط الزر مرة أخرى."); return; }
+    if (!passkeySupported) { setPasskeyNotice("هذا المتصفح أو الرابط لا يدعم البصمة. افتح رابط رَكيزة الرسمي عبر HTTPS."); return; }
+    try {
+      const options = await beginAuthenticationMutation.mutateAsync({ officialEmail: email.trim() });
+      const response = await startAuthentication({ optionsJSON: options });
+      const result = await finishAuthenticationMutation.mutateAsync({ officialEmail: email.trim(), response });
+      if (result?.verified) { window.location.assign(platformBasePath()); return; }
+      setPasskeyNotice(result?.reason === "expired" ? "انتهت جلسة التحقق. أعد المحاولة." : "لا توجد بصمة مسجّلة لهذا الحساب على هذا الجهاز. سجّل دخولك بكلمة المرور ثم فعّل البصمة.");
+    } catch (error) {
+      setPasskeyNotice(passkeyErrorMessage(error, "authenticate"));
+    }
   };
 
-  return <main dir="rtl" className="rakiza-theme-root relative min-h-screen bg-[#f7f6ef] px-4 py-7 text-[#243a32] sm:px-8" style={{ fontFamily: "Tajawal, sans-serif" }}><div className="mx-auto max-w-6xl"><header className="flex items-center justify-between gap-4"><div><p className="text-xs font-bold tracking-[.16em] text-[#b18448]">رَكيزة · دخول مستقل</p><h1 className="mt-2 text-3xl font-black text-[#12352f] sm:text-4xl">الدخول إلى رَكيزة</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#6c7b73]">الدخول بالبريد الرسمي المنتهي بـ @moj.gov.sa أو بريد المالك فقط. عند أول دخول يلزم تعيين كلمة مرور جديدة. تبقى OTP والبصمة خيارات ثانوية بعد إثبات الهوية.</p></div><ShieldCheck className="h-11 w-11 text-[#006c35]" /></header>{isPublicStaticHost() && <p role="status" className="mt-5 rounded-2xl border border-[#ecdcb9] bg-[#fffaf0] px-4 py-3 text-sm leading-7 text-[#746445]">{STATIC_HOST_LOGIN_MESSAGE}{operationalLoginHref() ? <> <a className="font-black text-[#006c35] underline" href={operationalLoginHref()}>افتح رابط التشغيل</a></> : null}</p>}<div className="mt-6"><PwaInstallHint alwaysVisible /></div><div className="mt-8 grid gap-6 lg:grid-cols-[1fr_22rem]"><section className="rounded-[1.7rem] border border-[#e7e0d4] bg-white p-6 shadow-[0_15px_40px_rgba(30,51,42,.06)] sm:p-8"><div className="grid grid-cols-3 gap-2 rounded-2xl bg-[#f3f5ef] p-1"><button type="button" onClick={() => { setMethod("firebase"); setNotice(""); }} className={`rounded-xl px-3 py-3 text-sm font-bold ${method === "firebase" ? "bg-white text-[#006c35] shadow-sm" : "text-[#718078]"}`}><ShieldCheck className="mx-auto mb-1 h-5 w-5" />كلمة المرور</button><button type="button" onClick={() => { setMethod("otp"); setNotice(""); }} className={`rounded-xl px-3 py-3 text-sm font-bold ${method === "otp" ? "bg-white text-[#006c35] shadow-sm" : "text-[#718078]"}`}><Mail className="mx-auto mb-1 h-5 w-5" />رمز OTP</button><button type="button" onClick={() => { setMethod("passkey"); setNotice(""); }} className={`rounded-xl px-3 py-3 text-sm font-bold ${method === "passkey" ? "bg-white text-[#006c35] shadow-sm" : "text-[#718078]"}`}><Fingerprint className="mx-auto mb-1 h-5 w-5" />مفتاح مرور</button></div><label className="mt-6 block text-sm font-bold text-[#385449]">البريد الرسمي<input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="name@moj.gov.sa" className="mt-2 h-12 w-full rounded-xl border border-input px-3" /></label>{method === "firebase" ? <FirebaseAuthPanel officialEmail={email} validOfficialEmail={validLoginEmail} activationToken={activationToken} forcePasswordSetup={forcePasswordSetup} onPasswordSetupComplete={() => setForcePasswordSetup(false)} /> : method === "otp" ? <div className="mt-6">{step === "email" ? <form onSubmit={requestOtp} className="space-y-4"><Button disabled={requestOtpMutation.isPending} type="submit" className="w-full bg-[#006c35] py-6 hover:bg-[#00552b]">{requestOtpMutation.isPending ? "جارٍ إرسال الرمز…" : "إرسال رمز تحقق"} <ArrowRight className="mr-2 h-4 w-4" /></Button><div className="rounded-xl border border-[#e7e0d4] p-4"><label className="block text-sm font-bold text-[#385449]">أو أرسل الرمز عبر الجوال المسجّل<input value={phone} onChange={e => setPhone(e.target.value)} placeholder="05xxxxxxxx" className="mt-2 h-11 w-full rounded-xl border px-3 text-sm font-normal" /></label><button type="button" disabled={requestByPhone.isPending} onClick={async () => { setNotice(""); try { const result = await requestByPhone.mutateAsync({ phone }); setNotice(`أُرسل الرمز إلى قناة التنبيه المرتبطة بالجوال. صالح ${Math.round(result.expiresInSeconds / 60)} دقائق.`); } catch (error) { setNotice(error instanceof Error ? error.message : "تعذر الإرسال عبر الجوال."); } }} className="mt-3 w-full rounded-xl border py-3 text-sm font-black">{requestByPhone.isPending ? "جارٍ الإرسال…" : "إرسال رمز للجوال المرتبط"}</button><p className="mt-2 text-[11px] leading-5 text-[#718078]">حل مجاني: الرمز يصل إلى بريد التنبيهات الشخصي المرتبط بالجوال، وليس عبر رسائل SMS مدفوعة.</p></div></form> : <form onSubmit={verifyOtp} className="space-y-4"><div className="rounded-xl bg-[#f5f8f3] p-4 text-sm leading-6 text-[#52665a]">أُرسل الرمز إلى قناة التنبيه المعتمدة لحسابك.</div><input value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" pattern="[0-9]{6}" placeholder="000000" className="h-14 w-full rounded-xl border border-input text-center text-2xl tracking-[.45em]" required /><div className="grid gap-3 sm:grid-cols-2"><Button disabled={verifyOtpMutation.isPending} type="submit" className="bg-[#006c35] hover:bg-[#00552b]">{verifyOtpMutation.isPending ? "جارٍ التحقق…" : "تحقق من الرمز"}</Button><Button type="button" variant="outline" disabled={resendCooldown > 0 || requestOtpMutation.isPending} onClick={() => void resendOtp()}>{requestOtpMutation.isPending ? "جارٍ الإرسال…" : resendCooldown > 0 ? `إعادة الإرسال بعد ${resendCooldown} ث` : "إعادة إرسال الرمز"}</Button></div></form>}</div> : <div className="mt-6 space-y-3"><div className="rounded-2xl border border-dashed border-[#b9cbb9] bg-[#f7faf5] p-6 text-center"><Fingerprint className="mx-auto h-12 w-12 text-[#006c35]" /><p className="mt-4 text-sm font-bold text-[#29463b]">بصمة الجهاز أو Face ID أو PIN</p><p className="mt-2 text-xs leading-6 text-[#718078]">بعد نجاح OTP يمكنك تسجيل هذا الجهاز مباشرة. لا تغادر بيانات البصمة جهازك.</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><Button type="button" onClick={authenticatePasskey} className="bg-[#006c35] hover:bg-[#00552b]"><KeyRound className="ml-2 h-4 w-4" />الدخول بالمفتاح</Button><Button type="button" variant="outline" onClick={registerPasskey}>تسجيل هذا الجهاز</Button></div></div>{passkeyState === "unsupported" && <p role="alert" className="rounded-xl bg-[#fff3df] p-3 text-sm text-[#88652f]">{notice}</p>}{passkeyState === "ready" && <p className="flex items-center gap-2 rounded-xl bg-[#e9f2ea] p-3 text-sm text-[#2f694f]"><CheckCircle2 className="h-4 w-4" />{notice}</p>}</div>}{notice && passkeyState !== "ready" && passkeyState !== "unsupported" && <p role="status" className="mt-5 rounded-xl bg-[#edf4ee] p-3 text-sm leading-6 text-[#426253]">{notice}</p>}<div className="mt-8 border-t border-[#eee8de] pt-5 text-center"><p className="text-sm text-[#718078]">موظف جديد؟</p><a href={platformHref("staff-login")} className="mt-2 block text-sm font-bold text-[#006c35] hover:underline">دخول الموظفين بـ PIN أو البصمة</a><a href={platformHref("register")} className="mt-2 inline-block text-sm font-bold text-[#006c35] hover:underline">إرسال طلب تسجيل جديد</a><a href={platformHref("recover")} className="mt-2 block text-sm font-bold text-[#65766d] hover:text-[#006c35]">نسيت الدخول؟ استعادة مجانية برمز لمرة واحدة</a><a href={platformHref("apps")} className="mt-2 block text-sm font-bold text-[#006c35] hover:underline">تثبيت رَكيزة كتطبيق على الجوال أو الآيباد أو اللابتوب</a></div></section><aside className="rounded-[1.7rem] border border-[#e7e0d4] bg-[#fcfbf7] p-6"><div className="flex items-center gap-3"><MonitorSmartphone className="h-5 w-5 text-[#006c35]" /><h2 className="font-bold text-[#12352f]">أجهزتك الموثوقة</h2></div><p className="mt-3 text-sm leading-6 text-[#718078]">الأجهزة المعروضة هي الأجهزة المسجلة في هذا المتصفح.</p><div className="mt-5 space-y-3">{devices.length ? devices.map(device => <div key={device} className="flex items-center justify-between gap-3 rounded-xl border border-[#e8e2d7] bg-white p-3"><div className="flex items-center gap-2 text-xs font-bold text-[#425a4d]"><Smartphone className="h-4 w-4 text-[#b18448]" />{device}</div></div>) : <p className="rounded-xl bg-white p-4 text-sm text-[#718078]">لا توجد أجهزة محفوظة في هذا المتصفح بعد.</p>}</div></aside></div></div>
-  <nav aria-label="اختصارات الدخول" className="fixed bottom-4 left-4 z-20 flex flex-col gap-2 sm:bottom-6 sm:left-6">
-    <button type="button" onClick={openOwnerLogin} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="دخول المالك"><UserRoundCog className="h-4 w-4 text-[#006c35]" /><span>دخول المالك</span></button>
-    <a href={platformHref("register")} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="تسجيل موظف جديد"><UserPlus className="h-4 w-4 text-[#006c35]" /><span>تسجيل موظف جديد</span></a>
-    <a href={platformHref("guide")} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="الحصول على المساعدة"><Headset className="h-4 w-4 text-[#006c35]" /><span>الحصول على المساعدة</span></a>
-  </nav>
+  const openOwnerLogin = () => { setMode("owner"); setNotice(""); setPasskeyNotice(""); };
+  const openEmployeeLogin = () => { setMode("employee"); setNotice(""); setPasskeyNotice(""); };
+
+  return <main dir="rtl" className="rakiza-theme-root relative min-h-screen bg-[#f7f6ef] px-4 py-7 text-[#243a32] sm:px-8" style={{ fontFamily: "Tajawal, sans-serif" }}>
+    <div className="mx-auto max-w-3xl">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold tracking-[.16em] text-[#b18448]">رَكيزة · دخول مستقل</p>
+          <h1 className="mt-2 text-3xl font-black text-[#12352f] sm:text-4xl">{mode === "owner" ? "دخول المالك" : "الدخول إلى رَكيزة"}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#6c7b73]">
+            {mode === "owner"
+              ? "مسار مخصص لبريد مالك المنصة الاستثنائي، عبر حساب Google فقط ودون كلمة مرور تقليدية."
+              : "الدخول بالبريد الرسمي المنتهي بـ @moj.gov.sa وكلمة المرور فقط. أول دخول: أنشئ كلمة مرورك من أحرف وأرقام وتُعتمد بعد ذلك دائماً."}
+          </p>
+        </div>
+        <ShieldCheck aria-hidden="true" className="h-11 w-11 shrink-0 text-[#006c35]" />
+      </header>
+
+      {isPublicStaticHost() && <p role="status" className="mt-5 rounded-2xl border border-[#ecdcb9] bg-[#fffaf0] px-4 py-3 text-sm leading-7 text-[#746445]">{STATIC_HOST_LOGIN_MESSAGE}{operationalLoginHref() ? <> <a className="font-black text-[#006c35] underline" href={operationalLoginHref()}>افتح رابط التشغيل</a></> : null}</p>}
+      <div className="mt-6"><PwaInstallHint alwaysVisible /></div>
+
+      <section className="mt-6 rounded-[1.7rem] border border-[#e7e0d4] bg-white p-6 shadow-[0_15px_40px_rgba(30,51,42,.06)] sm:p-8">
+        {mode === "owner"
+          ? <OwnerGoogleLogin onNotice={setNotice} />
+          : <>
+            <div>
+              <label className="block text-xs font-bold text-[#52665a]" htmlFor="rakiza-login-email">البريد الإلكتروني الرسمي</label>
+              <input id="rakiza-login-email" aria-label="البريد الإلكتروني الرسمي" value={email} onChange={event => setEmail(event.target.value)} type="email" dir="ltr" inputMode="email" autoComplete="username" placeholder="name@moj.gov.sa" className="mt-2 h-11 w-full rounded-xl border border-input px-3 text-sm" />
+              {email.trim().length > 0 && !validLoginEmail && <p role="alert" className="mt-2 text-xs font-bold text-[#9a4634]">لا يُقبل إلا بريد رسمي من نطاق moj.gov.sa.</p>}
+            </div>
+            <FirebaseAuthPanel officialEmail={email.trim()} validOfficialEmail={validLoginEmail} activationToken={activationToken} forcePasswordSetup={forcePasswordSetup} />
+          </>}
+
+        {notice && <p role="status" className="mt-4 rounded-xl bg-[#f3f6f1] p-3 text-xs leading-6 text-[#426253]">{notice}</p>}
+
+        {mode === "owner" && <button type="button" onClick={openEmployeeLogin} aria-label="رجوع إلى دخول الموظفين" className="mt-4 w-full text-center text-xs font-bold text-[#006c35] underline">رجوع إلى دخول الموظفين</button>}
+      </section>
+
+      {mode === "employee" && <section className="mt-6 rounded-[1.7rem] border border-[#e2dccd] bg-[#fbf9f4] p-6 shadow-sm">
+        <div className="flex items-center gap-2">
+          <Fingerprint aria-hidden="true" className="h-5 w-5 text-[#006c35]" />
+          <h2 className="text-sm font-black text-[#29463b]">تسجيل الدخول بالبصمة</h2>
+        </div>
+        <p className="mt-2 text-xs leading-6 text-[#718078]">بصمة جهازك تبقى داخل جهازك ولا تُرسل إلى المنصة. فعّل البصمة بعد أول دخول بكلمة المرور، ثم ادخل بها مباشرة.</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          <button type="button" onClick={() => void enrollPasskey()} aria-label="تفعيل الدخول بالبصمة على هذا الجهاز" className="rounded-xl bg-[#006c35] px-4 py-3 text-xs font-black text-white shadow-sm transition hover:bg-[#00552b]">تفعيل البصمة على هذا الجهاز</button>
+          <button type="button" onClick={() => void signInWithPasskey()} aria-label="الدخول بالبصمة المسجلة على هذا الجهاز" className="rounded-xl border border-[#bfd3c2] bg-white px-4 py-3 text-xs font-black text-[#246047] transition hover:bg-[#edf6ee]">الدخول بالبصمة</button>
+        </div>
+        {passkeyNotice && <p role="status" className="mt-3 rounded-xl bg-white p-3 text-xs leading-6 text-[#426253]">{passkeyNotice}</p>}
+      </section>}
+    </div>
+
+    <nav aria-label="اختصارات الدخول" className="fixed bottom-4 left-4 z-20 flex flex-col gap-2 sm:bottom-6 sm:left-6">
+      <button type="button" onClick={openOwnerLogin} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="دخول المالك" aria-label="دخول المالك"><UserRoundCog aria-hidden="true" className="h-4 w-4 text-[#006c35]" /><span>دخول المالك</span></button>
+      <a href={platformHref("register")} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="تسجيل موظف جديد"><UserPlus aria-hidden="true" className="h-4 w-4 text-[#006c35]" /><span>تسجيل موظف جديد</span></a>
+      <a href={platformHref("guide")} className="flex items-center gap-2 rounded-2xl border border-[#d9e5d9] bg-white/95 px-3 py-2 text-xs font-black text-[#12352f] shadow-lg backdrop-blur hover:border-[#006c35]" title="الحصول على المساعدة"><Headset aria-hidden="true" className="h-4 w-4 text-[#006c35]" /><span>الحصول على المساعدة</span></a>
+    </nav>
   </main>;
 }

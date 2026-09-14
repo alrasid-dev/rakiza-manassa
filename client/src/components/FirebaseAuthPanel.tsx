@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Chrome, KeyRound, MailCheck } from "lucide-react";
-import { GoogleAuthProvider, createUserWithEmailAndPassword, getRedirectResult, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, signOut, updatePassword } from "firebase/auth";
+import React, { useState } from "react";
+import { KeyRound, ShieldCheck } from "lucide-react";
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signOut, updatePassword } from "firebase/auth";
 import { platformBasePath } from "@/lib/pwa";
 import { trpc } from "@/lib/trpc";
 import { firebaseWebConfigReady, getFirebaseAuth } from "@/lib/firebase";
@@ -19,7 +19,7 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState<"google" | "signin" | "register" | "change" | null>(null);
+  const [busy, setBusy] = useState<"signin" | "register" | "change" | null>(null);
   const exchange = (trpc.court as any).firebaseAuth.exchange.useMutation();
   const completePasswordSetup = (trpc.court as any).firebaseAuth.completePasswordSetup?.useMutation?.() ?? { mutateAsync: async () => ({ success: true }), isPending: false };
   const activationMode = Boolean(activationToken) || forcePasswordSetup;
@@ -45,32 +45,6 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
     }
     onPasswordSetupComplete?.();
     window.location.assign(platformBasePath());
-  };
-
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return;
-    void getRedirectResult(auth).then(result => {
-      if (result) void bridgeSession(result.user);
-    }).catch(error => setNotice(firebaseErrorMessage(error, "تعذر إكمال دخول Google.")));
-  }, []);
-
-  const signInGoogle = async () => {
-    const auth = getFirebaseAuth();
-    if (!auth) { setNotice("إعداد Firebase غير مكتمل حالياً."); return; }
-    setBusy("google"); setNotice("");
-    try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      await bridgeSession(result.user);
-    } catch (error) {
-      const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code) : "";
-      if (["auth/internal-error", "auth/popup-blocked", "auth/popup-closed-by-user"].includes(code)) {
-        setNotice("سيتم فتح Google في الصفحة نفسها لإكمال الدخول بأمان.");
-        await signInWithRedirect(auth, new GoogleAuthProvider());
-        return;
-      }
-      setNotice(firebaseErrorMessage(error, "تعذر الدخول عبر Google."));
-    } finally { setBusy(null); }
   };
 
   const signInEmail = async () => {
@@ -122,14 +96,28 @@ export function FirebaseAuthPanel({ officialEmail, validOfficialEmail, activatio
     finally { setBusy(null); }
   };
 
-  return <div className="mt-6 space-y-4 rounded-2xl border border-[#d9e5d9] bg-[#f7faf5] p-5">
-    <div><p className="text-sm font-bold text-[#29463b]">{activationMode ? "تعيين كلمة مرور جديدة" : "الدخول عبر Google أو البريد"}</p><p className="mt-1 text-xs leading-6 text-[#718078]">{activationMode ? "بعد إثبات الهوية يلزم تعيين كلمة مرور جديدة قبل المتابعة. تبقى OTP والبصمة متاحتين لاحقاً." : "استخدم بريدك الرسمي نفسه. يبقى رمز OTP والبصمة متاحين كخيارات مستقلة."}</p>{Boolean(activationToken) && <p className="mt-2 rounded-lg bg-[#e9f2ea] p-2 text-xs leading-5 text-[#2f694f]">تم إثبات هويتك. يمكنك إنشاء كلمة المرور الآن دون انتظار رسالة تأكيد البريد؛ رمز التفعيل صالح لمرة واحدة.</p>}</div>
-    {!activationMode && <Button type="button" className="w-full bg-white text-[#29463b] shadow-sm hover:bg-[#f3f6f0]" variant="outline" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void signInGoogle()}><Chrome className="ml-2 h-4 w-4" />{busy === "google" ? "جارٍ فتح Google…" : "الدخول عبر Google الرسمي"}</Button>}
-    {!activationMode && <div className="relative py-1 text-center text-xs text-[#8a978e]"><span className="relative z-10 bg-[#f7faf5] px-2">أو</span><div className="absolute inset-x-0 top-1/2 border-t border-[#d9e5d9]" /></div>}
-    <label className="block text-xs font-bold text-[#52665a]">{activationMode ? "كلمة المرور الجديدة" : "كلمة المرور"}<input value={password} onChange={event => setPassword(event.target.value)} type="password" autoComplete={activationMode ? "new-password" : "current-password"} placeholder="8 خانات على الأقل" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" /></label>
-    <p className="mt-1 text-[11px] leading-5 text-[#718078]">{PASSWORD_POLICY_HINT}</p>
-    {activationMode && <label className="block text-xs font-bold text-[#52665a]">تأكيد كلمة المرور<input value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" placeholder="أعد كتابة كلمة المرور" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" /></label>}
-    <div className={`grid gap-3 ${activationMode ? "" : "sm:grid-cols-2"}`}><Button type="button" className="bg-[#006c35] hover:bg-[#00552b]" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void (activationMode ? registerEmail() : signInEmail())}><KeyRound className="ml-2 h-4 w-4" />{busy === "signin" || busy === "register" ? "جارٍ الحفظ…" : activationMode ? "حفظ كلمة المرور ومتابعة الدخول" : "دخول بالبريد"}</Button>{!activationMode && <Button type="button" variant="outline" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void registerEmail()}><MailCheck className="ml-2 h-4 w-4" />{busy === "register" ? "جارٍ الإنشاء…" : "إنشاء كلمة مرور"}</Button>}</div>
+  return <div className="mt-5 space-y-4">
+    <div className="flex items-start gap-2">
+      <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-[#006c35]" />
+      <div>
+        <p className="text-sm font-bold text-[#29463b]">{activationMode ? "تعيين كلمة مرور خاصة بك" : "كلمة المرور"}</p>
+        <p className="mt-1 text-xs leading-6 text-[#718078]">{activationMode ? "أول دخول: اختر كلمة مرور من أحرف وأرقام، وتُعتمد للدخول بعد ذلك دون أي تحقق إضافي." : "أدخل كلمة المرور الخاصة بحسابك الرسمي للدخول."}</p>
+      </div>
+    </div>
+    {Boolean(activationToken) && <p className="rounded-lg bg-[#e9f2ea] p-2 text-xs leading-5 text-[#2f694f]">تم إثبات هويتك. أنشئ كلمة مرورك الآن؛ رمز التفعيل صالح لمرة واحدة.</p>}
+    <div>
+      <label className="block text-xs font-bold text-[#52665a]" htmlFor="rakiza-login-password">{activationMode ? "كلمة المرور الجديدة" : "كلمة المرور"}</label>
+      <input id="rakiza-login-password" aria-label={activationMode ? "كلمة المرور الجديدة" : "كلمة المرور"} value={password} onChange={event => setPassword(event.target.value)} type="password" autoComplete={activationMode ? "new-password" : "current-password"} placeholder="8 خانات على الأقل" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" />
+      <p className="mt-1 text-[11px] leading-5 text-[#718078]">{PASSWORD_POLICY_HINT}</p>
+    </div>
+    {activationMode && <div>
+      <label className="block text-xs font-bold text-[#52665a]" htmlFor="rakiza-login-confirm">تأكيد كلمة المرور</label>
+      <input id="rakiza-login-confirm" aria-label="تأكيد كلمة المرور" value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} type="password" autoComplete="new-password" placeholder="أعد كتابة كلمة المرور" className="mt-2 h-11 w-full rounded-xl border border-input bg-white px-3 text-sm" />
+    </div>}
+    <Button type="button" className="w-full bg-[#006c35] hover:bg-[#00552b]" disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} onClick={() => void (activationMode ? registerEmail() : signInEmail())}>
+      <KeyRound aria-hidden="true" className="ml-2 h-4 w-4" />{busy === "signin" || busy === "register" ? "جارٍ التحقق…" : activationMode ? "حفظ كلمة المرور ومتابعة الدخول" : "دخول"}
+    </Button>
+    {!activationMode && <button type="button" onClick={() => void registerEmail()} disabled={!firebaseWebConfigReady || busy !== null || exchange.isPending} aria-label="أول دخول؟ إنشاء كلمة مرور جديدة" className="w-full text-center text-xs font-bold text-[#006c35] underline disabled:opacity-50">أول دخول؟ أنشئ كلمة مرورك الآن</button>}
     {notice && <p role="status" className="rounded-xl bg-white p-3 text-xs leading-6 text-[#426253]">{notice}</p>}
   </div>;
 };
